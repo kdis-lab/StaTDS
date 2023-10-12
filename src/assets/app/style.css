@@ -1,0 +1,118 @@
+.navigator_menu {
+    display: flex;
+    justify-content: space-between;
+    background-color: #333;
+    white-space: nowrap;
+    align-items: flex-start;
+}
+
+.menu {
+    /*display: inline-block;
+    justify-content: flex-start;*/
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+    font-weight: bold;
+    margin-right: auto;
+}
+
+.menu.right {
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+.item-menu {
+    display: flex;
+    flex-direction: row;
+    margin: 0 10px;
+    overflow: hidden;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    color: white;
+    text-decoration-color: red;
+}
+
+/* Change the link color to #111 (black) on hover */
+.item-menu:hover {
+  /*background-color: #111; */
+  background-color: #276E90;
+}
+
+.title-app{
+    text-align: center;
+    margin: 0 auto;
+}
+
+.content-info {
+    width: 600px;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    margin: 50px auto;
+    text-align: center;
+}
+
+.table-info{
+    width: 75%;
+    padding: 20px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    margin: 50px auto;
+    text-align: center;
+}
+
+.table-info.hidden{
+    display: none;
+}
+
+.left-block {
+    flex: 1;
+    background-color: #f0f0f0;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.right-block {
+    flex: 2;
+    background-color: #d0d0d0;
+    padding: 20px;
+    margin-left: 20px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+
+.slider-content {
+    display: flex,
+    flexDirection: column,
+    alignItems: center,
+    justifyContent: center,
+}
+
+.form-element{
+    display: flex;
+    flexDirection: row;
+    justify-content: space-between;
+    align-items: center; /* Esto alinea verticalmente los elementos en el centro */
+    margin-bottom: 0.5em;
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+.title {
+    padding-top: 0.5em;
+}
+
+.rankings{
+    height: 10em;
+}
+
+.content_page{
+    padding-top: 2em;
+}
