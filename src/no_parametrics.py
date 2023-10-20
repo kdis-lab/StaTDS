@@ -610,7 +610,7 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
     all_vs_all, index_control = (True, -1) if control is None else (False, algorithm_names.index(control))
 
     num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
-    alpha_bonferroni = alpha / num_of_comparisons
+    
     ranks = [ranks[i] for i in ranks.keys()]
 
     results_comp = []
@@ -620,23 +620,27 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
             for j in range(i+1, len(algorithm_names)):
                 comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
                 z_bonferroni = (ranks[i] - ranks[j]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
-                p_value = stats.get_p_value_normal(z_bonferroni)
+                p_value = 2 * stats.get_p_value_normal(z_bonferroni)
                 results_comp.append((comparisons, z_bonferroni, p_value))
     else:
         for i in range(len(algorithm_names)):
             if index_control != i:
                 comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
                 z_bonferroni = (ranks[index_control] - ranks[i]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
-                p_value = stats.get_p_value_normal(z_bonferroni)
+                p_value = 2 * stats.get_p_value_normal(z_bonferroni)
                 results_comp.append((comparisons, z_bonferroni, p_value))
 
     comparisons, z_bonferroni, p_values = zip(*results_comp)
-    results_h0 = ["H0 is accepted" if p_value > alpha_bonferroni else "H0 is rejected" for p_value in p_values]
+
+    alpha_bonferroni = alpha / num_of_comparisons
 
     alphas = [alpha_bonferroni] * len(comparisons)
+    adj_p_values = [min((num_of_comparisons * p_value), 1) for p_value in p_values]
 
-    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": z_bonferroni, "Adjusted p-value": p_values,
-                            "Adjusted alpha": alphas, "Results": results_h0})
+    results_h0 = ["H0 is accepted" if p_value > alpha_ else "H0 is rejected" for p_value, alpha_ in zip(p_values, alphas)]
+    
+    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": z_bonferroni, "p-value": p_values, "Adjusted alpha": alphas, 
+                            "Adjusted p-value": adj_p_values, "alpha": [alpha] * len(alphas), "Results": results_h0})
 
     if verbose:
         print(results)
@@ -645,9 +649,9 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
 
     if control is None:
         control = algorithm_names[0]
-    print("hola")
+
     figure = generate_graph_p_values(results, control, all_vs_all)
-    print("ADIOS")
+
     return results, figure
 
 
@@ -711,14 +715,14 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
             for j in range(i+1, len(algorithm_names)):
                 comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
                 statistic_z = (ranks[i] - ranks[j]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
-                p_value = stats.get_p_value_normal(statistic_z)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
                 results_comp.append((comparisons, statistic_z, p_value))
     else:
         for i in range(len(algorithm_names)):
             if index_control != i:
                 comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
                 statistic_z = (ranks[index_control] - ranks[i]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
-                p_value = stats.get_p_value_normal(statistic_z)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
                 results_comp.append((comparisons, statistic_z, p_value))
 
     comparisons, statistic_z, p_values = zip(*results_comp)
@@ -731,10 +735,17 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
 
     alphas, _ = zip(*alphas)
 
-    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values, alphas)]
+    adj_p_values = [max(((num_of_comparisons - j) * p_values_with_index[j][1], p_values_with_index[j][0]) for j in range(i+1))
+                    for i in range(num_of_comparisons)]
 
-    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "Adjusted p-value": p_values,
-                            "Adjusted alpha": alphas, "Results": results_h0})
+    adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
+
+    adj_p_values, _ = zip(*adj_p_values)
+    adj_p_values = [min(i, 1) for i in adj_p_values]
+    results_h0 = ["H0 is accepted" if p_value > alpha_ else "H0 is rejected" for p_value, alpha_ in zip(p_values, alphas)]
+    
+    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "p-value": p_values, "Adjusted alpha": alphas, 
+                            "Adjusted p-value": adj_p_values, "alpha": [alpha] * len(alphas), "Results": results_h0})
 
     if verbose:
         print(results)
