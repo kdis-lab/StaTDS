@@ -988,6 +988,206 @@ def shaffer(ranks: dict, alpha: float = 0.05):
     figure = generate_graph_p_values(results, control, True)
     return results, figure
 
+
+def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, verbose: bool = False):
+    algorithm_names = list(ranks.keys())
+    num_algorithm = len(algorithm_names)
+    if not(control is None) and control not in algorithm_names:
+        print(f"Warning: Control algorithm don't found, we continue All VS All")
+        control = None
+
+    all_vs_all, index_control = (True, 0) if control is None else (False, algorithm_names.index(control))
+
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    ranks = [ranks[i] for i in ranks.keys()]
+    
+    results_comp = []
+
+    if all_vs_all:
+        for i in range(len(algorithm_names)):
+            for j in range(i+1, len(algorithm_names)):
+                comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
+                statistic_z = calculate_z_friedman(ranks[i], ranks[j], num_algorithm, num_cases)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
+                results_comp.append((comparisons, statistic_z, p_value))
+    else:
+        for i in range(len(algorithm_names)):
+            if index_control != i:
+                comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
+                statistic_z = calculate_z_friedman(ranks[index_control], ranks[i], num_algorithm, num_cases)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
+                results_comp.append((comparisons, statistic_z, p_value))
+
+    comparisons, statistic_z, p_values = zip(*results_comp)
+
+    p_values_with_index = list(enumerate(p_values))
+    p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
+    # Creo que debería de ser en vez de (num_algorithm - 1) el número de comparaciones
+    alphas = [(1- (1-alpha)**(num_of_comparisons - index), value[0]) for index, value in enumerate(p_values_with_index)]
+    alphas = sorted(alphas, key=lambda x: x[1])
+
+    alphas, _ = zip(*alphas)
+
+    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values, alphas)]
+
+    # Creo que debería de ser en vez de (num_algorithm ) el número de comparaciones + 1
+    adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons-j), p_values_with_index[j][0]) for j in range(i+1)], key= lambda x:x[0]) for i in range(num_of_comparisons)]
+
+    adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
+
+    adj_p_values, _ = zip(*adj_p_values)
+    adj_p_values = [min(i, 1) for i in adj_p_values]
+
+    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "p-value": p_values, "Adjusted alpha": alphas, 
+                            "Adjusted p-value": adj_p_values, "alpha": [alpha] * len(alphas), "Results": results_h0})
+
+    if verbose:
+        print(results)
+
+    if control is None:
+        control = algorithm_names[0]
+    
+    figure = generate_graph_p_values(results, control, all_vs_all)
+    return results, figure
+
+
+def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None):
+    algorithm_names = list(ranks.keys())
+    if not(control is None) and control not in algorithm_names:
+        print(f"Warning: Control algorithm don't found, we continue All VS All")
+        control = None
+
+    all_vs_all, index_control = (True, 0) if control is None else (False, algorithm_names.index(control))
+    
+    results_comp = []
+    num_algorithm = len(algorithm_names)
+    ranks = [ranks[i] for i in ranks.keys()]
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+
+    if all_vs_all:
+        for i in range(len(algorithm_names)):
+            for j in range(i+1, len(algorithm_names)):
+                comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
+                statistic_z = calculate_z_friedman(ranks[i], ranks[j], num_algorithm, num_cases)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
+                results_comp.append((comparisons, statistic_z, p_value))
+    else:
+        for i in range(len(algorithm_names)):
+            if index_control != i:
+                comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
+                statistic_z = calculate_z_friedman(ranks[index_control], ranks[i], num_algorithm, num_cases)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
+                results_comp.append((comparisons, statistic_z, p_value))
+
+    comparisons, statistic_z, p_values = zip(*results_comp)
+
+    p_values_with_index = list(enumerate(p_values))
+    p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
+
+    alphas = [(alpha / (num_of_comparisons - index), value[0]) for index, value in enumerate(p_values_with_index)]
+    alphas = sorted(alphas, key=lambda x: x[1])
+
+    alphas, _ = zip(*alphas)
+
+    # Algorithm that calculates the adjusted p-values for Hommel (ref Fig. 2 )
+    # Art: Advanced nonparametric tests for multiple comparisons in the design of experiments in computational intelligence and data mining: Experimental analysis of power
+    
+    length = len(p_values)
+    adj_p_values = list(p_values).copy()
+    c_list = [0.0] * length
+
+    indices_sorted = sorted(range(len(p_values)), key=lambda x: p_values[x])
+
+    for m in range(length, 1, -1):
+        upper_range = list(range(length, length - m, -1))
+        for i in upper_range:
+            c_list[i-1] = (m * p_values[indices_sorted[i-1]]) / (m + i - length)
+        
+        c_min = min(c_list[i-1] for i in upper_range)
+        
+        for i in upper_range:
+            adj_p_values[indices_sorted[i-1]] = max(adj_p_values[indices_sorted[i-1]], c_min)
+        
+        for i in range(length - m):
+            c_list[i] = min(c_min, m * p_values[indices_sorted[i]])
+            adj_p_values[indices_sorted[i]] = max(adj_p_values[indices_sorted[i]], c_list[i])
+
+
+
+    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(adj_p_values, alphas)]
+
+    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "p-value": p_values, "Adjusted alpha": alphas, 
+                            "Adjusted p-value": adj_p_values, "alpha": [alpha] * len(alphas), "Results": results_h0})
+
+    if control is None:
+        control = algorithm_names[0]
+
+    figure = generate_graph_p_values(results, control, all_vs_all)
+    return results, figure
+
+
+def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None):
+    algorithm_names = list(ranks.keys())
+    if not(control is None) and control not in algorithm_names:
+        print(f"Warning: Control algorithm don't found, we continue All VS All")
+        control = None
+
+    all_vs_all, index_control = (True, 0) if control is None else (False, algorithm_names.index(control))
+    
+    results_comp = []
+    num_algorithm = len(algorithm_names)
+    ranks = [ranks[i] for i in ranks.keys()]
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+
+    if all_vs_all:
+        for i in range(len(algorithm_names)):
+            for j in range(i+1, len(algorithm_names)):
+                comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
+                statistic_z = calculate_z_friedman(ranks[i], ranks[j], num_algorithm, num_cases)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
+                results_comp.append((comparisons, statistic_z, p_value))
+    else:
+        for i in range(len(algorithm_names)):
+            if index_control != i:
+                comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
+                statistic_z = calculate_z_friedman(ranks[index_control], ranks[i], num_algorithm, num_cases)
+                p_value = 2 * stats.get_p_value_normal(statistic_z)
+                results_comp.append((comparisons, statistic_z, p_value))
+
+    comparisons, statistic_z, p_values = zip(*results_comp)
+
+    length = len(p_values)
+    alphas = [0.0] * length
+    adj_p_values = [0.0] * length
+
+    alphas[length-1], alphas[length-2] = alpha, alpha / 2.0 
+    adj_p_values[length - 1], adj_p_values[length - 2] = 1, 2
+    
+    for i in range(3, length + 1):
+        sum_factor_1 = sum(alpha ** j for j in range(1, i-1))
+        sum_factor_2 = sum(math.comb(i, j) * (alphas[(length - 2) - j] ** (i-j)) for j in range(1, i-2))
+        
+        alphas[length - i] = (sum_factor_1 - sum_factor_2) / float(i)
+        adj_p_values[length - i] = alphas[length - 1] / alphas[length - i]
+    
+    indices_sorted = sorted(range(len(p_values)), key=lambda x: p_values[x])
+
+    adj_p_values = [(r * p_values[p], p) for p, r in zip(indices_sorted, adj_p_values)]
+    adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
+    adj_p_values, _ = zip(*adj_p_values)
+
+    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(adj_p_values, alphas)]
+
+    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "p-value": p_values, "Adjusted alpha": alphas, 
+                            "Adjusted p-value": adj_p_values, "alpha": [alpha] * len(alphas), "Results": results_h0})
+
+    if control is None:
+        control = algorithm_names[0]
+
+    figure = generate_graph_p_values(results, control, all_vs_all)
+    return results, figure
+    
+
 # -------------------- Post-Hoc Test -------------------- #
 
 
