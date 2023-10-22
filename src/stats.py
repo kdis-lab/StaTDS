@@ -1,5 +1,6 @@
 import math
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 current_directory = Path(__file__).resolve().parent
@@ -104,7 +105,7 @@ def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
     columns = list(chi_table.columns)
     available_df = chi_table.DF.unique()
     available_alpha = [float(i) for i in columns[1:]]
-    selected_alpha = min(available_alpha, key=lambda num: abs(num - alpha))
+    selected_alpha = min(available_alpha, key=lambda num: abs(float(num) - float(alpha)))
     selected_df = min(available_df, key=lambda num: abs(num - k_degrees_of_freedom))
     cv_to_alpha = float(chi_table[chi_table.DF == selected_df][str(selected_alpha)].iloc[0])
 
@@ -228,7 +229,7 @@ def get_cv_willcoxon(num_problems: int, alpha: float):
 
 
 def get_shapiro_weights(n_weights):
-    table = pd.read_csv(current_directory / "shapiro_weights.csv")
+    table = pd.read_csv(current_directory / "assets/statistical_tables/shapiro_weights.csv")
     row_table = table[table["n"] == n_weights].to_numpy()
     first_nan_index = np.argmax(np.isnan(row_table))
     weights = row_table[0][1:first_nan_index]

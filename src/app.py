@@ -424,6 +424,7 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
 
     test_homocedasticity = [
         {'label': "Levene", 'value': "Levene"},
+        {'label': "Bartlett", 'value': "Bartlett"}
     ]
 
     if pathname in ['/home', "/"]:
@@ -584,6 +585,11 @@ def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: flo
         content.extend([post_hoc_subtitle, post_hoc_result])
     return html.Div(children=content)
 
+def generate_table_and_textarea(table_data, height, caption_text, id_val="textarea-dataset"):
+    table = generate_tabla_of_dataframe(table_data, height_table=height)
+    text_table = utils.dataframe_to_latex(table_data, caption=caption_text)
+    textarea = dbc.Textarea(id=id_val, size="lg", value=text_table, style={'height': '200px'})
+    return table, textarea
 
 def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     # TODO Cambiar esto cuando este el anova mejorado:
@@ -604,13 +610,13 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     available_test = {"Friedman": no_parametrics.friedman,
                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                       "Quade": no_parametrics.quade,
-                      "ANOVA between cases": anova_cases,
-                      "ANOVA within cases": anova_within_cases
+                      "ANOVA between cases": parametrics.anova_cases,
+                      "ANOVA within cases": parametrics.anova_within_cases
                       }
 
     test_function = available_test[columns[0]]
 
-    rankings_with_label, statistic, p_value, critical_value, hypothesis = test_function(data, alpha)
+    table_results, statistic, p_value, critical_value, hypothesis = test_function(data, alpha)
 
     if p_value is None:
         test_result = f"Statistic: {statistic} Critical Value: {critical_value} Result: {hypothesis}"
@@ -618,14 +624,23 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         test_result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
     test_subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
     title = html.H3(f"Multiple Groups", className="title")
+    content = [title, test_subtitle, test_result]
+    content_to_export = [test_subtitle]
+    if type(table_results) is list:
+        tab_1, tab_1_exportable = generate_table_and_textarea(table_results[0], "14em", "Data Summary")
+        caption_2 = f"Summary {columns[0]} test (significance level of {alpha})"
+        tab_2, tab_2_exportable = generate_table_and_textarea(table_results[1], "14em", caption_2)
+        
+        content.extend([tab_1, tab_2])
+        content_to_export.extend([tab_1_exportable, tab_2_exportable])
+    else:
+        rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
+        caption = f"Rankings of {columns[0]} test (significance level of {alpha})"
+        table, table_exportable = generate_table_and_textarea(rankings_data, "7.2em", caption)
+        
+        content.append(table)
+        content_to_export.append(table_exportable)
 
-    rankings = pd.DataFrame({i[0]: [round(i[1], 5)] for i in rankings_with_label.items()})
-    table = generate_tabla_of_dataframe(rankings, height_table="7.2em")
-    text_table = utils.dataframe_to_latex(rankings,
-                                          caption=f"Rankings of {columns[0]} test (significance level of {alpha})")
-    table_exportable = dbc.Textarea(id="textarea-dataset", size="lg", value=text_table, style={'height': '200px'})
-    content = [title, test_subtitle, test_result, table]
-    content_to_export = [test_subtitle, table_exportable]
     if not (columns[1] is None):
         available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
                               "Bonferroni": no_parametrics.bonferroni,
@@ -916,34 +931,38 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
                                 "D'Agostino-Pearson": parametrics.d_agostino_pearson,
                                 "Kolmogorov-Smirnov": parametrics.kolmogorov_smirnov,
                                 }
-    available_homocedasticity_test = {"Levene": parametrics.levene_test}
-
-    test_normality_function = available_normality_test[test_normality]
+    available_homocedasticity_test = {"Levene": parametrics.levene_test, 
+                                      "Bartlett": parametrics.bartlett_test}
+    content = []
     alpha = float(alpha)
-    columns = list(dataset.columns)
-    statistic_list, p_value_list, cv_value_list, hypothesis_list = [], [], [], []
+    if not(test_normality is None):
+        test_normality_function = available_normality_test[test_normality]
+        columns = list(dataset.columns)
+        statistic_list, p_value_list, cv_value_list, hypothesis_list = [], [], [], []
 
-    for i in range(1, len(columns)):
-        statistic, p_value, cv_value, hypothesis = test_normality_function(dataset[columns[i]].to_numpy(), alpha)
-        # TODO realizar el bucle
-        statistic_list.append(statistic)
-        p_value_list.append(p_value)
-        cv_value_list.append(cv_value)
-        hypothesis_list.append(hypothesis)
+        for i in range(1, len(columns)):
+            statistic, p_value, cv_value, hypothesis = test_normality_function(dataset[columns[i]].to_numpy(), alpha)
+            # TODO realizar el bucle
+            statistic_list.append(statistic)
+            p_value_list.append(p_value)
+            cv_value_list.append(cv_value)
+            hypothesis_list.append(hypothesis)
 
-    test_subtitle = html.H5(f"{test_normality} test (significance level of {alpha})")
-    title = html.H3(f"Normality Analysis", className="title")
+        test_subtitle = html.H5(f"{test_normality} test (significance level of {alpha})")
+        title = html.H3(f"Normality Analysis", className="title")
 
-    results_test = pd.DataFrame({"Dataset": columns[1:], "Statistic": statistic_list, "p-value": p_value_list,
-                                 "Results": hypothesis_list})
+        results_test = pd.DataFrame({"Dataset": columns[1:], "Statistic": statistic_list, "p-value": p_value_list,
+                                     "Results": hypothesis_list})
 
-    table = generate_tabla_of_dataframe(results_test, height_table=f"{4.2 * len(results_test)}em")
-    content = [title, test_subtitle, table]
+        table = generate_tabla_of_dataframe(results_test, height_table=f"{4.2 * len(results_test)}em")
+        content = [title, test_subtitle, table]
     if not(test_homoscedasticity is None):
         test_homocedasticity_function = available_homocedasticity_test[test_homoscedasticity]
         statistic, p_value, cv_value, hypothesis = test_homocedasticity_function(dataset, alpha)
-
-        test_result = f"Statistic: {statistic} Critical Value: {cv_value}  Result: {hypothesis}"
+        if p_value is None:
+            test_result = f"Statistic: {statistic} Critical Value: {cv_value}  Result: {hypothesis}"
+        else:
+            test_result = f"Statistic: {statistic} P-Value: {p_value}  Result: {hypothesis}"
         test_subtitle = html.H5(f"{test_homoscedasticity} test (significance level of {alpha})")
         title = html.H3(f"Homocedasticity Analysis", className="title")
 
