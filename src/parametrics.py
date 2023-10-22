@@ -172,7 +172,7 @@ def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
     if dataset.shape[1] < 2:
         raise "Error: Bartlett Test need at least two samples"
 
-    names_groups = list(dataset.columns)
+    names_groups = list(dataset.columns)[1:]
     num_groups = len(names_groups)
     num_samples = [dataset[i].shape[0] for i in names_groups]
     num_total = np.sum(num_samples)
@@ -192,14 +192,14 @@ def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
 
     p_value, cv_value = stats.get_p_value_chi2(statistical_bartlett, num_groups-1, alpha=alpha)
 
+    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+
     if p_value > alpha:
-        print(f"Same distributions (fail to reject H0) with alpha {alpha}")
-    else:
-        print(f"Different distributions (reject H0) with alpha {alpha}")
+        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    print("\t p_value = ", p_value)
+    # print("\t p_value = ", p_value)
 
-    return statistical_bartlett, p_value, cv_value
+    return statistical_bartlett, p_value, cv_value, hypothesis
 
 
 def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
@@ -344,6 +344,118 @@ def anova_within_cases_test(dataset: pd.DataFrame, alpha: float = 0.05):
 
     return statistical_f_anova, rejected_value, p_value, hypothesis
 
+
+def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
+    if dataset.shape[1] < 2:
+        raise "Error: Anova Test need at least two samples"
+
+    names_groups = list(dataset.columns)
+    names_groups = names_groups[1:]
+    num_groups = len(names_groups)
+    num_samples = [dataset[i].shape[0] for i in names_groups]
+    num_total = np.sum(num_samples)
+    sum_groups = []
+    sum_square_groups = []
+    for i in names_groups:
+        sum_groups.append(np.sum(dataset[i]))
+        sum_square_groups.append(np.sum(dataset[i] ** 2))
+
+    sum_x_t = sum(sum_groups)
+
+    ss_bg = np.sum([(sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)]) - ((sum_x_t ** 2) / num_total)
+    df_bg = num_groups - 1
+
+    ss_wg = np.sum([sum_square_groups[i] - (sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)])
+    df_wg = num_total - num_groups
+
+    ms_bg = ss_bg / df_bg
+    ms_wg = ss_wg / df_wg
+
+    statistical_f_anova = ms_bg / ms_wg
+
+    # TODO Calculate P-Valor F Dist with alpha df_numerator (df_bg) df_denominator (df_wg) (Revisar tras hablar)
+    # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
+    rejected_value = stats.get_cv_f_distribution(df_bg, df_wg, alpha=alpha)
+    p_value = None
+
+    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    if statistical_f_anova < rejected_value:
+        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+
+    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
+
+    mean_groups, std_dev_groups, std_error_groups = zip(*summary_results)
+    content = {"Groups": names_groups, "Nº Samples": num_samples, "Mean": mean_groups, "Std. Dev.": std_dev_groups, "Std. Error": std_error_groups}
+    summary_results = pd.DataFrame(content)
+    sources = ["Between Groups", "Within Groups", "Total"]
+    df_list = [df_bg, df_wg, num_total - 1]
+    sum_squares = [ss_bg, ss_wg, ss_bg + ss_wg]
+    mean_square = [ms_bg, ms_wg, ms_bg + ms_wg]
+    f_stats = [statistical_f_anova , "", ""]
+    rejected_values = [rejected_value , "", ""]
+    anova_results = {"Source": sources, "Degrees of Freedom (DF)": df_list, "Sum of Squares (SS)": sum_squares, "Mean Square (MS)": mean_square, "F-Stat": f_stats, "Rejected Value": rejected_values}
+    anova_results = pd.DataFrame(anova_results)
+    
+    return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
+
+
+def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
+    if dataset.shape[1] < 2:
+        raise "Error: Anova Test need at least two samples"
+
+    names_groups = list(dataset.columns)
+    names_groups = names_groups[1:]
+    num_groups = len(names_groups)
+    num_samples = [dataset[i].shape[0] for i in names_groups]
+    num_total = np.sum(num_samples)
+    sum_groups = []
+    sum_square_groups = []
+    for i in names_groups:
+        sum_groups.append(np.sum(dataset[i]))
+        sum_square_groups.append(np.sum(dataset[i] ** 2))
+    sum_s_i = dataset[names_groups].sum(axis=1)
+    sum_x_t = sum(sum_groups)
+    sum_x_square_t = sum(sum_square_groups)
+
+    ss_bc = np.sum([(sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)]) - ((sum_x_t ** 2) / num_total)
+    df_bc = num_groups - 1
+    ms_bc = ss_bc / df_bc
+
+    ss_bs = np.sum([i ** 2 / num_groups for i in sum_s_i]) - ((sum_x_t ** 2) / num_total)
+    df_bs = num_samples[0] - 1
+    ms_bs = ss_bs / df_bs
+
+    ss_res = sum_x_square_t - ss_bc - ss_bs
+    df_res = (num_samples[0] - 1) * (num_groups - 1)
+    ms_res = ss_res / df_res
+
+    statistical_f_anova = ms_bc / ms_res
+
+    # TODO Calculate P-Valor F Dist with alpha and df_numerator (df_bc) df_denominator (df_res)
+    # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
+    rejected_value = stats.get_cv_f_distribution(df_bc, df_res, alpha=alpha)
+    p_value = None
+
+    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    if statistical_f_anova < rejected_value:
+        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+
+    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
+
+    mean_groups, std_dev_groups, std_error_groups = zip(*summary_results)
+    content = {"Groups": names_groups, "Nº Samples": num_samples, "Mean": mean_groups, "Std. Dev.": std_dev_groups, "Std. Error": std_error_groups}
+    summary_results = pd.DataFrame(content)
+    
+    sources = ["Between Conditions", "Between Subjects", "Residual", "Total"] # Se podría agregar el Between Subjects
+    df_list = [df_bc, df_bs, df_res, df_bc + df_bs + df_res]
+    sum_squares = [ss_bc, ss_bs, ss_res, ss_bc + ss_bs+ ss_res]
+    mean_square = [ms_bc, ms_bs, ms_res, ms_bc + ms_bs+ ms_res]
+    f_stats = [statistical_f_anova , "", "", "" ]
+    rejected_values = [rejected_value , "", "", ""]
+    anova_results = {"Source": sources, "Degrees of Freedom (DF)": df_list, "Sum of Squares (SS)": sum_squares, "Mean Square (MS)": mean_square, "F-Stat": f_stats, "Rejected Value": rejected_values}
+    anova_results = pd.DataFrame(anova_results)
+     
+    return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
 
 # PRUEBAS UNITARIAS DE LAS FUNCIONES QUITAR ESTO DE AQUI MÁS ADELANTE
 
