@@ -407,11 +407,13 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
     post_hoc_no_parametrics = [
         {'label': "Nemenyi", 'value': "Nemenyi"},
         {'label': "Bonferroni", 'value': "Bonferroni"},
+        {'label': "Li", 'value': "Li"},
         {'label': "Holm", 'value': "Holm"},
         {'label': "Finner", 'value': "Finner"},
         {'label': "Hochberg", 'value': "Hochberg"},
-        {'label': "Schaffer", 'value': "Schaffer"},
-        {'label': "Li", 'value': "Li"}
+        {'label': "Hommel", 'value': "Hommel"},
+        {'label': "Rom", 'value': "Rom"},
+        {'label': "Schaffer", 'value': "Schaffer"}
     ]
 
     test_normality = [
@@ -541,11 +543,14 @@ def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: flo
     if not(columns[1] is None):
         available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
                               "Bonferroni": no_parametrics.bonferroni,
+                              "Li": no_parametrics.li,
                               "Holm": no_parametrics.holm,
+                              "Holland": no_parametrics.holland,
                               "Finner": no_parametrics.finner,
                               "Hochberg": no_parametrics.hochberg,
-                              "Schaffer": no_parametrics.shaffer,
-                              "Li": no_parametrics.li,
+                              "Hommel": no_parametrics.hommel,
+                              "Rom": no_parametrics.rom,
+                              "Schaffer": no_parametrics.shaffer
                               }
         post_hoc_function = available_post_hoc[columns[1]]
 
@@ -624,11 +629,14 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     if not (columns[1] is None):
         available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
                               "Bonferroni": no_parametrics.bonferroni,
+                              "Li": no_parametrics.li,
                               "Holm": no_parametrics.holm,
+                              "Holland": no_parametrics.holland,
                               "Finner": no_parametrics.finner,
                               "Hochberg": no_parametrics.hochberg,
-                              "Schaffer": no_parametrics.shaffer,
-                              "Li": no_parametrics.li,
+                              "Hommel": no_parametrics.hommel,
+                              "Rom": no_parametrics.rom,
+                              "Schaffer": no_parametrics.shaffer
                               }
         post_hoc_function = available_post_hoc[columns[1]]
 

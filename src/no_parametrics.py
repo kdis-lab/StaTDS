@@ -622,7 +622,7 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
 
     all_vs_all, index_control = (True, -1) if control is None else (False, algorithm_names.index(control))
 
-    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) // 2.0 if all_vs_all else num_algorithm - 1
     
     ranks = [ranks[i] for i in ranks.keys()]
 
@@ -669,7 +669,9 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
 
 
 def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
-    content = data[["Comparison", "Adjusted p-value", "Adjusted alpha"]].to_numpy()
+    columns = ["Comparison", "p-value", "Adjusted alpha"]
+    # columns = ["Comparison", "Adjusted p-value", "alpha"]
+    content = data[columns].to_numpy()
 
     if all_vs_all is False:
         for i in range(len(content)):
@@ -718,7 +720,7 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
 
     all_vs_all, index_control = (True, 0) if control is None else (False, algorithm_names.index(control))
 
-    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) // 2.0 if all_vs_all else num_algorithm - 1
     ranks = [ranks[i] for i in ranks.keys()]
     
     results_comp = []
@@ -747,7 +749,7 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
     alphas = sorted(alphas, key=lambda x: x[1])
 
     alphas, _ = zip(*alphas)
-
+    num_of_comparisons = int(num_of_comparisons)
     adj_p_values = [max(((num_of_comparisons - j) * p_values_with_index[j][1], p_values_with_index[j][0]) for j in range(i+1))
                     for i in range(num_of_comparisons)]
 
@@ -829,7 +831,7 @@ def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     results_comp = []
     num_algorithm = len(algorithm_names)
     ranks = [ranks[i] for i in ranks.keys()]
-    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) // 2.0 if all_vs_all else num_algorithm - 1
 
     if all_vs_all:
         for i in range(len(algorithm_names)):
@@ -857,7 +859,7 @@ def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     alphas = [(1- (1-alpha)**(num_of_comparisons/float(index+1)), value[0]) for index, value in enumerate(p_values_with_index)]
     alphas = sorted(alphas, key=lambda x: x[1])
     alphas, _ = zip(*alphas)
-
+    num_of_comparisons = int(num_of_comparisons)
     adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons/float(j+1)), p_values_with_index[j][0]) for j in range(i+1)], key= lambda x:x[0]) for i in range(num_of_comparisons)]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
@@ -896,8 +898,6 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None):
 
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
-
-    print(p_values_with_index)
 
     adj_p_values = [(p_values_with_index[i][1] / (p_values_with_index[i][1] + 1 - p_values_with_index[-1][1]), p_values_with_index[i][0]) for i in range(len(p_values))]
     adj_p_values = sorted(adj_p_values, key=lambda x:x[1])
@@ -998,7 +998,7 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
 
     all_vs_all, index_control = (True, 0) if control is None else (False, algorithm_names.index(control))
 
-    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) // 2.0 if all_vs_all else num_algorithm - 1
     ranks = [ranks[i] for i in ranks.keys()]
     
     results_comp = []
@@ -1031,6 +1031,7 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
     results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values, alphas)]
 
     # Creo que debería de ser en vez de (num_algorithm ) el número de comparaciones + 1
+    num_of_comparisons = int(num_of_comparisons)
     adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons-j), p_values_with_index[j][0]) for j in range(i+1)], key= lambda x:x[0]) for i in range(num_of_comparisons)]
 
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
@@ -1062,7 +1063,7 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     results_comp = []
     num_algorithm = len(algorithm_names)
     ranks = [ranks[i] for i in ranks.keys()]
-    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) // 2.0 if all_vs_all else num_algorithm - 1
 
     if all_vs_all:
         for i in range(len(algorithm_names)):
@@ -1137,7 +1138,7 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None):
     results_comp = []
     num_algorithm = len(algorithm_names)
     ranks = [ranks[i] for i in ranks.keys()]
-    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if all_vs_all else num_algorithm - 1
+    num_of_comparisons = (num_algorithm * (num_algorithm - 1)) // 2.0 if all_vs_all else num_algorithm - 1
 
     if all_vs_all:
         for i in range(len(algorithm_names)):
