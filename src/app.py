@@ -635,13 +635,15 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         content_to_export.extend([tab_1_exportable, tab_2_exportable])
     else:
         rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
+        rankings_data = pd.DataFrame(rankings_data)
+        rankings_with_label = table_results
         caption = f"Rankings of {columns[0]} test (significance level of {alpha})"
         table, table_exportable = generate_table_and_textarea(rankings_data, "7.2em", caption)
         
         content.append(table)
         content_to_export.append(table_exportable)
 
-    if not (columns[1] is None):
+    if not (columns[1] is None) and type(table_results) is dict:
         available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
                               "Bonferroni": no_parametrics.bonferroni,
                               "Li": no_parametrics.li,
@@ -994,4 +996,4 @@ def process_normality(n_clicks, reset, generate_pdf, alpha, test_normality, test
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
