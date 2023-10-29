@@ -658,7 +658,8 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         post_hoc_function = available_post_hoc[columns[1]]
 
         parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": False, "verbose": False, "name_fig": "", "control": parameters["control"]
+                                  "criterion": False, "verbose": False, "name_fig": "", "control": parameters["control"], 
+                                  "type_rank": columns[0]
                                   }
         args_functions = inspect.signature(post_hoc_function)
         args = {name: parameter.default for name, parameter in args_functions.parameters.items()
