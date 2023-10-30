@@ -64,6 +64,14 @@ def binomial_coef(n: int, k: int):
     :param k: The number of items to be chosen.
     :return: The binomial coefficient value (n choose k).
     """
+    if n < 0:
+        return math.nan
+
+    if n == 0 or k < 0 or n - k + 1 == 0:
+        return 0 
+
+    a = math.gamma(n + 1) / (math.gamma(k + 1) * math.gamma(n - k + 1))
+
     return math.gamma(n + 1) / (math.gamma(k + 1) * math.gamma(n - k + 1))
 
 

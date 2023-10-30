@@ -269,15 +269,15 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
                                      (2 * num_algorithm * num_cases + 1)) / 6.) - (
                                                1. / float(num_algorithm)) * ranks_i))
 
+    ranks = [df[i].mean() for i in columns_names]
+    rankings_with_label = {j: i for i, j in zip(ranks, columns_names)}
+
     if verbose:
         #  Se podría concatenar estas columnas al dataframe anterior para tener en una sola todos los valores
         print(df_aligned)
         print(df[columns_names])
         print(stadistic_friedman)
         print(f"Rankings {ranks_j}")
-
-    ranks = [df[i].mean() for i in columns_names]
-    rankings_with_label = {j: i for i, j in zip(ranks, columns_names)}
 
     hypothesis_state = False
 
@@ -1078,7 +1078,7 @@ def hochberg(ranks: dict, alpha: float = 0.05, control: str = None):
     return results, figure
 
 
-def shaffer(ranks: dict, alpha: float = 0.05):
+def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "Friedman"):
     """
     Perform a Shaffer post-hoc test using the pivot quantities obtained by a ranking test.
 
@@ -1121,31 +1121,20 @@ def shaffer(ranks: dict, alpha: float = 0.05):
     independent_test_hypotheses = _calculate_independent_tests(int((1 + math.sqrt(1 + 4 * m * 2)) / 2))
     t = [max([a for a in independent_test_hypotheses if a <= m - i]) for i in range(m)]
     
-    results_comp = []
-    for i in range(len(algorithm_names)):
-        for j in range(i+1, len(algorithm_names)):
-            comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
-            # statistic_z = (ranks[algorithm_names[i]] - ranks[algorithm_names[j]]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
-            statistic_z = (ranks[algorithm_names[i]] - ranks[algorithm_names[j]])
-            p_value = stats.get_p_value_normal(statistic_z)
-            results_comp.append((comparisons, statistic_z, p_value))
+    num_algorithm = len(ranks.keys())
+    results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, None, type_rank)    
 
     comparisons, statistic_z, p_values = zip(*results_comp)
 
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
-
     adj_p_values = [(min(max(t[j] * p_values_with_index[j][1] for j in range(i + 1)), 1), p_values_with_index[0]) for i in range(m)]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
-
+    # TODO REVISAR CALCULOS
     alphas = [alpha] * len(p_values)
 
-    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(adj_p_values,
-                                                                                                      alphas)]
-
-    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "p-value": p_values,
-                           "Adjusted p-value": adj_p_values, "Adjusted alpha": alphas, "Results": results_h0})
+    results = create_dataframe_results(comparisons, statistic_z, p_values, alphas, adj_p_values, alphas)
 
     control = algorithm_names[0]
 
