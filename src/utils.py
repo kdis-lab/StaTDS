@@ -3,6 +3,7 @@ import io
 import base64
 import pandas as pd
 import no_parametrics, parametrics
+import matplotlib.pyplot as plt
 
 from pathlib import Path
 
@@ -42,8 +43,8 @@ available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                   "Quade": no_parametrics.quade,
                                   # "ANOVA between cases": parametrics.anova_test,
                                   # "ANOVA within cases": parametrics.anova_within_cases_test
-                                  "ANOVA between cases": anova_cases,
-                                  "ANOVA within cases": anova_within_cases
+                                  "ANOVA between cases": parametrics.anova_cases,
+                                  "ANOVA within cases": parametrics.anova_within_cases
                                   }
 available_test_two_groups = {"Wilcoxon": no_parametrics.wilconxon,
                              "Binomial Sign": no_parametrics.binomial,
@@ -94,7 +95,7 @@ if available_fpdf:
                 the right, configured with different styles and alignments.
             :return:
             """
-            self.reset_margin()
+            #self.reset_margin()
             # Logo (imagen) a la izquierda
             self.image(current_directory / 'assets/images/logo.png', 10, 15, 33)  # Reemplaza 'tu_logo.png' con la ruta de tu imagen
             # Texto a la derecha en tres filas distintas
@@ -112,7 +113,7 @@ if available_fpdf:
             self.cell(160)
             self.set_font("helvetica", "I", 15)
             self.cell(30, 10, properties["ref-library"], align="R")
-            self.ln(10)
+            self.ln(20)
 
         def footer(self):
             """
@@ -166,14 +167,48 @@ if available_fpdf:
         :param fig_size: Size of the figure (width, height).
         :return:
         """
+        def create_table(show_table):
+            data = [show_table.columns.tolist()] + show_table.values.tolist()
+
+            # Establecer el ancho de las columnas
+            col_width = pdf.w / (len(show_table.columns) * 2)
+            # size_cols = [25, 15, 35, 15, 20, 35]
+            size_cols = [25] * len(show_table.columns)
+            with pdf.table(width=sum(size_cols), col_widths=size_cols, borders_layout="MINIMAL",
+                           headings_style=FontFace(emphasis="B")) as t:
+
+                aligns = ['C'] * len(show_table.columns)
+                table_width = col_width * len(show_table.columns)
+                x = (pdf.w - table_width) / 2
+
+                # Establecer la posición x para la primera celda en la fila
+                pdf.set_x(x)
+                # Agregar filas a la tabla
+                pdf.set_font("Times", "", 12)
+                for i, row in enumerate(data):
+                    row_table = t.row()
+                    for item, align in zip(row, aligns):
+                        text = str(round(item, 4)) if type(item) is float else str(item)
+                        row_table.cell(text, align)
+
+                    pdf.set_x(x)
+
         pdf.print_header(text=title_experiment, font_size=16, font_style='B', fill=False, align="C")
         pdf.print_header(text=title, font_size=14, font_style='B', fill=True, border="L")
         pdf.print_header(text=test_subtitle, font_size=12, font_style='BI')
         pdf.set_font("Times", "", 11)
         pdf.set_left_margin(pdf.l_margin * 1.5)
+        tables_to_show = []
         for item in test_result:
+            if type(item) is pd.DataFrame:
+                tables_to_show.append(item)
+                continue
             pdf.cell(txt=item, markdown=True)
             pdf.ln()
+
+        # Show new tables
+        for i in tables_to_show:
+            create_table(i)
 
         pdf.reset_margin()
 
@@ -184,30 +219,7 @@ if available_fpdf:
             pdf.set_font("Times", "", 16)
 
             if not (show_table is None):
-                data = [show_table.columns.tolist()] + show_table.values.tolist()
-
-                # Establecer el ancho de las columnas
-                col_width = pdf.w / (len(show_table.columns) * 2)
-                size_cols = [30, 20, 35, 20, 35]
-
-                with pdf.table(width=sum(size_cols), col_widths=size_cols, borders_layout="MINIMAL",
-                               headings_style=FontFace(emphasis="B")) as t:
-
-                    aligns = ['C'] * len(show_table.columns)
-                    table_width = col_width * len(show_table.columns)
-                    x = (pdf.w - table_width) / 2
-
-                    # Establecer la posición x para la primera celda en la fila
-                    pdf.set_x(x)
-                    # Agregar filas a la tabla
-                    pdf.set_font("Times", "", 12)
-                    for i, row in enumerate(data):
-                        row_table = t.row()
-                        for item, align in zip(row, aligns):
-                            text = str(round(item, 4)) if type(item) is float else str(item)
-                            row_table.cell(text, align)
-
-                        pdf.set_x(x)
+                create_table(show_table)
 
             if show_graph != "":
                 adjustment_factor = [12, 18]
@@ -247,7 +259,8 @@ def print_results(title_experiment, title, test_subtitle, test_result, h_post_ho
     print(title)
     print(test_subtitle)
     for item in test_result:
-        print(f"\t {item}")
+        show = item if type(item) is pd.DataFrame else f"\t {item}"
+        print(show)
 
     if h_post_hoc != "":
         print(h_post_hoc)
@@ -331,12 +344,17 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         fig_size = []
 
         if multigroup_test:
-            rankings_with_label, statistic, p_value, critical_value, hypothesis = test_function(**function_args)
+            table_results, statistic, p_value, critical_value, hypothesis = test_function(**function_args)
             test_result = [f"- **Statistic:** {statistic}", f"- **Result:** {hypothesis}"]
             if p_value is None:
                 test_result.extend([f"- **Critival Value:** {critical_value}"])
             else:
                 test_result.extend([f"- **P-value:** {p_value}"])
+            if type(table_results) is list:
+                test_result.extend(table_results)
+            else:
+                rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
+                test_result.append(pd.DataFrame(rankings_data))
             if post_hoc_test:
                 if info_experiment["post_hoc"] not in available_post_hoc.keys():
                     raise LibraryError("Error: Post Hoc no available")
@@ -348,9 +366,11 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
                 control = info_experiment["control"] if "control" in info_experiment.keys() else None
                 all_vs_all = info_experiment["all_vs_all"] if "all_vs_all" in info_experiment.keys() else True
 
-                function_args = {"ranks": rankings_with_label, "num_cases": dataset.shape[0],
+                function_args = {"ranks": table_results, "num_cases": dataset.shape[0],
                                  "alpha": float(info_experiment["alpha"]), "control": control,
-                                 "all_vs_all": all_vs_all, "verbose": False}
+                                 "all_vs_all": all_vs_all, "verbose": False,
+                                 "type_rank": info_experiment["test"]
+                                 }
 
                 function_args = {i: function_args[i] for i in args.keys()}
 
@@ -385,6 +405,8 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         else:
             print_results(f"Experiment {name_experiment} : {type_test}", title, test_subtitle, test_result,
                           h_post_hoc, show_table, show_graph)
+
+        plt.close('all')
 
     if generate_pdf:
         pdf.output(name_pdf)
@@ -534,16 +556,16 @@ if __name__ == "__main__":
         }
     }
     import pandas as pd
-    df = pd.read_csv("test_all_vs_all.csv")
+    df = pd.read_csv("assets/app/sample_dataset.csv")
     # analysis_of_experiments(df, analysis_form, generate_pdf=True)
     columns = list(df.columns)
 
-    aux = generate_json(["hola", "adios", "p", "a"],
+    aux = generate_json(["A", "B", "C", "D", "E"],
                         [{"alpha": 0.05, "test": "Wilcoxon", "first_group": columns[1],
                           "second_group": columns[-1]},
                          {"alpha": "0.05", "test": "T-Test paired",
                           "first_group": columns[1], "second_group": columns[-1]},
                          {"alpha": 0.05, "test": "ANOVA between cases", "criterion": True},
-                         {"alpha": [0.05, 0.01, 0.1], "test": "Friedman", "criterion": True, "post_hoc": "Bonferroni"}])
-    print("hola")
-    analysis_of_experiments(df, aux, generate_pdf=False)
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Bonferroni"},
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Nemenyi"}])
+    analysis_of_experiments(df, aux, generate_pdf=True)
