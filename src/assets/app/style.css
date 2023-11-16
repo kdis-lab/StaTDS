@@ -28,7 +28,7 @@
     margin: 0 10px;
     overflow: hidden;
     text-align: center;
-    padding: 14px 16px;
+    padding: 2em 16px;
     text-decoration: none;
     color: white;
     text-decoration-color: red;
@@ -40,25 +40,67 @@
   background-color: #276E90;
 }
 
+
+.logos-menu{
+    margin: 0 1em;
+}
+
+.logo-kdis-menu {
+    display: flex;
+    flex-direction: row;
+    margin: 0 10px;
+    overflow: hidden;
+    text-align: center;
+    padding: 1.5em 16px;
+    text-decoration: none;
+    color: white;
+    border-radius: 50%;
+    text-decoration-color: red;
+    background-color: white;
+}
+
+/* Change the link color to #111 (black) on hover */
+.logo-kdis-menu:hover {
+  /*background-color: #111; */
+  background-color: #276E90;
+}
+
+
+.logo-menu {
+    display: flex;
+    flex-direction: row;
+    margin: 0 1em;
+    overflow: hidden;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    text-decoration-color: red;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.logo-menu:hover {
+  /*background-color: #111; */
+  background-color: #276E90;
+}
+
 .title-app{
     text-align: center;
     margin: 0 auto;
 }
 
 .content-info {
-    width: 600px;
+    width: 50%;
     padding: 20px;
-    border: 2px solid #333;
-    border-radius: 10px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
     margin: 50px auto;
-    text-align: center;
+    text-align: justify;
 }
 
 .table-info{
     width: 75%;
     padding: 20px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
     margin: 50px auto;
     text-align: center;
 }
@@ -115,4 +157,8 @@
 
 .content_page{
     padding-top: 2em;
+}
+
+.button:hover{
+    background-color: #276E90;
 }

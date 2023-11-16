@@ -25,6 +25,19 @@ with open("assets/app/README.md", 'r') as film:
     readme_content = film.read()
 
 
+reference_content = "Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)"
+
+bibtext_content = '''
+                    ```latex
+                    @InProceedings{statds, 
+                        author={Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)},
+                        title={(StaTDS): name-article}, 
+                        booktitle={journay}, 
+                        year={2015}
+                    }
+                    ```
+                  '''
+
 def generate_text_sample():
     with open("assets/app/sample_dataset.csv", "r") as f:
         text = f.read()
@@ -32,19 +45,26 @@ def generate_text_sample():
 
 
 def generate_navigator_menu():
+    menus_2 = [
+                {"title": html.Img(src="assets/images/logo-StaTDS-without-background.png", style={"width": "4.5em", "height": "4.5em"}),
+                 "href": "home", "icon": "mdi:home-outline", "className":"logo-menu"},
+                {"title": html.Img(src="assets/images/logo-kdislab.png", style={"width": "4em", "height": "1.5em"}),
+                 "href": "https://www.uco.es/kdis/", "icon": "mdi:home-outline", "className":"logo-kdis-menu"},
+              ]
     menus = [
-                {"title": html.Img(src="assets/images/logo.png", style={"width": "5em", "height": "1em"}),
-                 "href": "home", "icon": "mdi:home-outline"},
-                {"title": "Data Analysis", "href": "data_analysis"},
-                {"title": "Normality & Homoscedasticity", "href": "normality_homoscedasticity"},
+                {"title": "Data Analysis", "href": "data_analysis", "className":"item-menu"},
+                {"title": "Normality & Homoscedasticity", "href": "normality_homoscedasticity", "className":"item-menu"},
             ]
     import_button = dbc.Button(children="Import Data", id="import-Data", outline=True, className="menu item-menu")
     export_button = dbc.Button(children="Export Results", id="export-data", outline=True, className="menu item-menu")
-    content = [dcc.Link(children=[html.Div(item["title"], className="item-menu")],
+    content = [dcc.Link(children=[html.Div(item["title"], className=item["className"])],
                         href=item["href"] if "href" in item.keys() else None, className="menu") for item in menus]
 
+    content_2 = [dbc.Button(children=[html.Div(item["title"], className=item["className"])],
+                        href=item["href"] if "href" in item.keys() else None, className="logos-menu", color=None) for item in menus_2]
+
     download_file = dcc.Download(id="download-text")
-    content = content + [import_button, export_button, generate_import_data_page(), generate_export_table_page(),
+    content = content_2 + content + [import_button, export_button, generate_import_data_page(), generate_export_table_page(),
                          download_file]
     return html.Div(
         children=content, className="navigator_menu"
@@ -141,7 +161,14 @@ def generate_tabla_of_dataframe(df: pd.DataFrame, height_table: str = '30em'):
 
 
 def generate_home_page(dataframe: pd.DataFrame):
-    global readme_content
+    global readme_content, reference_content, bibtext_content
+    code_style = {
+        'width': '100%', 'height': '200px',
+        'boxShadow': '0 0 0 1px #ddd', 'overflowY': 'scroll',
+        'background': '#f7f7f7', 'border': 'none', 'borderRadius': '4px',
+        'fontFamily': 'monospace', 'fontSize': '16px', 'padding': '10px',
+        'color': '#333'
+    }
 
     main_content = html.Div(
         children=[
@@ -149,7 +176,26 @@ def generate_home_page(dataframe: pd.DataFrame):
             html.Div(id="table-content", children=generate_tabla_of_dataframe(dataframe),
                      className="table-info hidden" if dataframe is None or dataframe.empty else "table-info"),
             html.Div(children=[html.P(readme_content)],
-                     className="content-info")
+                     className="content-info"),
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        html.H5("Reference", className="card-title"),
+                        html.P(reference_content, className="card-text",
+                        ),
+                        dcc.Markdown(bibtext_content)
+                    ]
+                ),
+                className="content-info",
+            ),
+            # TODO Cambiar la forma que se ven los botones
+            html.Div([
+                dbc.ButtonGroup([
+                    dbc.Button([html.Img(src='assets/images/logo-send-email.png', style={"height":"2em", "margin-right":"0.5em"}), "Contact email"], href="mailto:i82luesc@uco.es?Subject=[StaTDS]", className="button", color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-github.png', style={"height":"2em", "margin-right":"0.5em"}), "Source on Gitlab"], href="https://github.com/kdis-lab/statistical_lib", className="button", color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-python.png', style={"height":"2em", "margin-right":"0.5em"}), "Python Doc"], href="https://github.com/kdis-lab/statistical_lib", className="button",color="secondary", outline=True),
+                    ]),
+            ], className="p-4")
         ]
     )
 
@@ -261,15 +307,24 @@ def import_data(n_clicks, textarea_value, separator, n_clicks_modal, current_ses
 def generate_alpha_form(multiple_alpha: bool = False):
     available_alpha = [0.1, 0.05, 0.025, 0.01, 0.005, 0.001]
     title = "Alpha(s)" if multiple_alpha else "Alpha"
-    return [html.Label(title, style={"margin-left": "1em", "margin-right": "1em"}),
-            dcc.Dropdown(
-                    options=[{'label': str(i), 'value': str(i)} for i in available_alpha],
-                    value=str(available_alpha[1]), style={'width': 'auto', "min-width": "8em", "max-width": "16em"},
-                    id="selector_alpha", multi=multiple_alpha),
+    return [html.Div([html.Label(title, style={"margin-left": "1em", "margin-right": "1em"}),
+                      dcc.Dropdown(
+                        options=[{'label': str(i), 'value': str(i)} for i in available_alpha],
+                        value=str(available_alpha[1]), style={'width': 'auto', "min-width": "8em", "max-width": "16em"},
+                        id="selector_alpha", multi=multiple_alpha)]),
             html.Div([
                 html.Label('Generate Reports'),
-                daq.BooleanSwitch(id='reports_switch', on=False)
-            ], className="slider-content")]
+                daq.BooleanSwitch(id='reports_switch', on=False),
+                
+            ], className="slider-content"),
+            html.Div([
+                html.Label('Optimization Criterion'),
+                html.Div([
+                        html.Label('Min', style={"margin-right":"0.95em", "margin-left":"0.95em"}),
+                        daq.BooleanSwitch(id='criterion_switch', on=False),
+                        html.Label('Max', style={"margin-left":"1em"})
+                    ],style={'display': 'flex', 'align-items': 'center'})])
+            ]
 
 
 def generate_select_groups(columns: list, id_selector: str, text_label: str):
@@ -322,7 +377,7 @@ def create_test_form(columns: list, title: str, test_two_groups: list, test_mult
                  className="form-element"),
         html.Div(generate_post_hoc(test_post_hoc), className=class_name_post_hoc),
         html.Div(generate_select_groups(columns, "select_control", "Control"),
-                 className="form-element"),
+                 className="form-element")
     ])
 
 
@@ -616,7 +671,14 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
     test_function = available_test[columns[0]]
 
-    table_results, statistic, p_value, critical_value, hypothesis = test_function(data, alpha)
+    parameters_to_function = {"dataset": data, "alpha": alpha, "criterion": parameters["criterion"], "verbose": False}
+    args_functions = inspect.signature(test_function)
+    args = {name: parameter.default for name, parameter in args_functions.parameters.items()
+            if name not in ["self", "kwargs", "args"]}
+
+    parameters_to_function = {i: parameters_to_function[i] for i in args.keys()}
+
+    table_results, statistic, p_value, critical_value, hypothesis = test_function(**parameters_to_function)
 
     if p_value is None:
         test_result = f"Statistic: {statistic} Critical Value: {critical_value} Result: {hypothesis}"
@@ -658,7 +720,7 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         post_hoc_function = available_post_hoc[columns[1]]
 
         parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": False, "verbose": False, "name_fig": "", "control": parameters["control"], 
+                                  "criterion": parameters["criterion"], "verbose": False, "name_fig": "", "control": parameters["control"], 
                                   "type_rank": columns[0]
                                   }
         args_functions = inspect.signature(post_hoc_function)
@@ -811,6 +873,7 @@ def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_
                 alpha_results = [results_two_groups(df, test_selected, info_experiment["alpha"])]
         elif info_experiment["test"] in available_test_multiple_groups.keys():
             test_selected = {"test": info_experiment["test"], "post_hoc": info_experiment["post_hoc"],
+                             "criterion": info_experiment["criterion"], 
                              "control": info_experiment["control"] if info_experiment["post_hoc"] not in ["Nemenyi",
                                                                                                           "Schaffer"]
                              else None}
@@ -871,10 +934,11 @@ def get_number_from_text(text):
               State('selector_post_hoc', 'value'),
               State('select_control', 'value'),
               State('user-experiments', 'data'),
-              State("list-experiment", "selectedRows")
+              State("list-experiment", "selectedRows"),
+              State("criterion_switch", "on")
               )
 def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, test_two_groups, group_1, group_2,
-                   test_multiple_groups, test_post_hoc, control, user_experiments, selected_experiment):
+                   test_multiple_groups, test_post_hoc, control, user_experiments, selected_experiment, criterion):
     if add_n_clicks is None and remove_n_clicks is None and remove_all_n_clicks is None:
         return dash.no_update
 
@@ -895,7 +959,7 @@ def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, te
 
         if not (test_multiple_groups is None):
             names_exp.append(get_letter_experiment(index_exp))
-            args = {"alpha": alpha, "test": test_multiple_groups, "post_hoc": test_post_hoc, "criterion": True}
+            args = {"alpha": alpha, "test": test_multiple_groups, "post_hoc": test_post_hoc, "criterion": criterion}
             if test_post_hoc not in ["Nemenyi", "Schaffer"]:
                 args["control"] = control
 

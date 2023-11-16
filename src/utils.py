@@ -34,9 +34,9 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     return pd.DataFrame(), s, p, c, h
 
 
-properties = {"title-header": "Inform elaborated with LIBRARY",
+properties = {"title-header": "Inform elaborated with StaTDS",
               "subtitle-header": "Version X.X",
-              "ref-library": "https://github.com/kdis-lab/lac"}
+              "ref-library": "https://github.com/kdis-lab/StaTDS"}
 
 available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                   "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
