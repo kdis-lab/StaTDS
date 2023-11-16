@@ -2,7 +2,6 @@ import pandas as pd
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import re
 import stats
 
 
@@ -13,7 +12,31 @@ class LibraryError(Exception):
 
 # -------------------- Test Two Groups -------------------- #
 def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
+    """
+        Perform the Wilcoxon signed-rank test. This non-parametric test is used to compare two related samples, matched
+        samples, or repeated measurements on a single sample to assess whether their population mean ranks differ. It is
+        an alternative to the paired Student's t-test when the data is not normally distributed.
 
+        :param dataset: A pandas DataFrame with exactly two columns, each representing a different condition or time
+                        point for the same subjects.
+        :param alpha: The significance level for the test, default is 0.05.
+        :param verbose: A boolean (True or False). If True, prints the detailed results table.
+
+        :return: A tuple containing the following:
+            - w_wilcoxon: The Wilcoxon test statistic, which is the smallest of the sums of the positive and negative
+                          ranks.
+            - cv_alpha_selected: The critical value for the test at the specified alpha level (only for small sample
+                                 sizes, otherwise None).
+            - p_value: The p-value for the hypothesis test (only for large sample sizes, otherwise None).
+            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, or
+                          p-value and alpha.
+
+        Note: The Wilcoxon signed-rank test makes fewer assumptions than the t-test and is appropriate when the data
+        are not normally distributed. It ranks the absolute differences between pairs, then compares these ranks.
+        The test is sensitive to ties and has different procedures for small and large sample sizes. For large samples,
+        the test statistic is approximately normally distributed, allowing the use of normal approximation for p-value
+        calculation.
+    """
     if dataset.shape[1] != 2:
         raise "Error: The test only needs two samples"
 
@@ -25,7 +48,7 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     results_wilconxon = {"index": [], "dif": [], "rank": [], "R": []}
     rank = 0.0
     # Esto se deberá de arreglar para cuando se repitan valores en las diferencias
-    tied_ranges = not(len(set(absolute_dif)) == absolute_dif.shape[0])
+    tied_ranges = not (len(set(absolute_dif)) == absolute_dif.shape[0])
 
     for index in absolute_dif.index:
         if math.fabs(0 - absolute_dif[index]) < 1e-10:
@@ -101,7 +124,31 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
 
 
 def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
+    """
+        Perform a binomial sign test. This non-parametric test is used to determine if there is a significant difference
+        between the medians of two dependent samples. It's an alternative to the paired t-test and Wilcoxon signed-rank
+        test, particularly useful when the data does not meet the assumptions of these tests or when the data is on an
+        ordinal scale.
 
+        :param dataset: A pandas DataFrame with exactly two columns, each representing a different condition or time
+                        point for the same subjects.
+        :param alpha: The significance level for the test, default is 0.05.
+        :param verbose: A boolean (True or False). If True, prints the detailed results table.
+
+        :return: A tuple containing the following:
+            - statistical_binomial: The binomial test statistic, which is the largest of the counts of positive or
+                                    negative differences.
+            - cv_alpha_selected: The critical value for the test at the specified alpha level (not calculated in this
+                                 function, hence None).
+            - p_value: The p-value for the hypothesis test, calculated from the binomial distribution.
+            - hypothesis: A string stating the conclusion of the test based on the test statistic and p-value in
+                          comparison to alpha.
+
+        Note: The binomial sign test counts the number of positive and negative differences between paired observations
+        and then tests if the observed proportion of positive (or negative) differences is significantly different from
+        0.5 (no difference). The test assumes that the distribution of differences is symmetric around the median and
+        ignores pairs with no difference.
+    """
     if dataset.shape[1] != 2:
         print("Error: The test only needs two samples")
 
@@ -138,7 +185,31 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
 
 
 def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    """
+        Perform the Mann-Whitney U test, also known as the Wilcoxon rank-sum test. This non-parametric test is used to
+        determine whether there is a significant difference between the distributions of two independent samples. It's
+        an alternative to the independent t-test when the data does not meet the assumptions of the t-test.
 
+        :param dataset: A pandas DataFrame with exactly two columns, each representing a different independent sample.
+        :param alpha: The significance level for the test, default is 0.05.
+        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
+                          ascending order; if True, in descending order.
+        :param verbose: A boolean (True or False). If True, prints the detailed results table.
+
+        :return: A tuple containing the following:
+            - z_value: The z-value computed from the U statistic.
+            - cv_alpha_selected: The critical value for the test at the specified alpha level (not calculated in this
+                                 function, hence None).
+            - p_value: The p-value for the hypothesis test, calculated from the normal approximation of the U
+                       distribution.
+            - hypothesis: A string stating the conclusion of the test based on the z-value and p-value in comparison to
+                          alpha.
+
+        Note: The Mann-Whitney U test ranks all the observations from both groups together and then compares the sum of
+        ranks in each group. It is appropriate for ordinal data and is robust against non-normal distributions. The test
+        assumes that the two groups are independent and that the observations are ordinal or continuous. The normal
+        approximation for the p-value calculation is valid for large sample sizes.
+    """
     if dataset.shape[1] != 2:
         raise "Error: The test only needs two samples"
 
@@ -189,6 +260,30 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
 
 # -------------------- Test Multiple Groups -------------------- #
 def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    """
+        Perform the Friedman test, a non-parametric statistical test similar to the parametric ANOVA, but for
+        repeated measures. The Friedman test is used to detect differences in treatments across multiple test
+        attempts. It ranks the treatments for each block (or subject), then considers these ranks.
+
+        :param dataset: A pandas DataFrame with the first column as the block or subject identifier and the remaining
+                        columns as different treatments or conditions.
+        :param alpha: The significance level for the test, default is 0.05.
+        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
+                          ascending order; if True, in descending order.
+        :param verbose: A boolean (True or False). If True, prints the detailed results table including ranks.
+
+        :return: A tuple containing the following:
+            - rankings_with_label: A dictionary with the average ranks of each treatment or condition.
+            - stadistic_friedman: The Friedman test statistic, which is chi-squared distributed under the null
+                                  hypothesis.
+            - reject_value: A tuple containing the critical value for the test and the p-value (if applicable).
+            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, and
+                          alpha.
+
+        Note: The Friedman test is appropriate when data is ordinal and the assumptions of parametric tests (like ANOVA)
+        are not met. It considers the ranks of the treatments within each block, summing these ranks, and then analyzing
+        the sums' distribution. The test is robust against non-normal distributions and is ideal for small sample sizes.
+    """
     columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
     num_algorithm -= 1
@@ -238,6 +333,31 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
 
 
 def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    """
+        Perform the Friedman Aligned Ranks test, an extension of the Friedman test. This test is used when dealing with
+        multiple treatments or conditions over different subjects or blocks, especially in cases where the assumptions
+        of the classical Friedman test may not hold. The test aligns the data by subtracting the mean across treatments
+        for each subject before ranking.
+
+        :param dataset: A pandas DataFrame with the first column as the block or subject identifier and the remaining
+                        columns as different treatments or conditions.
+        :param alpha: The significance level for the test, default is 0.05.
+        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
+                          ascending order; if True, in descending order.
+        :param verbose: A boolean (True or False). If True, prints the detailed results table including aligned ranks.
+
+        :return: A tuple containing the following:
+            - rankings_with_label: A dictionary with the average ranks of each treatment or condition.
+            - stadistic_friedman: The Friedman Aligned Ranks test statistic.
+            - reject_value: A tuple containing the critical value for the test and the p-value (if applicable).
+            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, and
+                          alpha.
+
+        Note: The Friedman Aligned Ranks test modifies the standard Friedman test by aligning the data for each subject
+        before ranking. This alignment is achieved by subtracting the average rank across treatments for each subject,
+        making the test more robust to certain types of data irregularities, like outliers. It is appropriate for
+        ordinal data and assumes that the groups are independent and identically distributed within each block.
+    """
     columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
     num_algorithm -= 1
@@ -302,6 +422,31 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
 
 
 def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    """
+        Perform the Quade test, a non-parametric statistical test used to identify significant differences between
+        three or more matched groups. This test is particularly useful for blocked designs where treatments are
+        applied to matched groups or blocks. The Quade test considers the relative differences between treatments
+        within each block and ranks these differences.
+
+        :param dataset: A pandas DataFrame with the first column as the block or subject identifier and the remaining
+                        columns as different treatments or conditions.
+        :param alpha: The significance level for the test, default is 0.05.
+        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
+                          ascending order; if True, in descending order.
+        :param verbose: A boolean (True or False). If True, prints the detailed results table including ranks.
+
+        :return: A tuple containing the following:
+            - rankings_with_label: A dictionary with the average ranks of each treatment or condition.
+            - stadistic_quade: The Quade test statistic.
+            - reject_value: A tuple containing the critical value for the test and the p-value (if applicable).
+            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, and
+                          alpha.
+
+        Note: The Quade test adjusts for differences in treatment effects within each block by incorporating the range
+        of each block into the ranking process. This makes it more sensitive to treatment effects in the presence of
+        block-to-block variability. It's appropriate for ordinal data and assumes that the treatments are independent
+        and identically distributed within each block.
+    """
     columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
     num_algorithm -= 1
@@ -598,6 +743,7 @@ def nemenyi(ranks: dict, num_cases: int, alpha: float = 0.05, verbose: bool = Fa
 
     return ranks_values, critical_distance_nemenyi, figure
 
+
 # TODO REORGANIZAR Y REVISAR
 def calculate_z_friedman(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
     return (rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
@@ -608,7 +754,8 @@ def calculate_z_friedman_aling(rank_i: float, rank_j: float, num_algorithm: int,
 
 
 def calculate_z_quade(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    return (rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) * (num_algorithm - 1)) / (18 * num_cases * (num_cases + 1))))
+    return (rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) * (num_algorithm - 1)
+                                           ) / (18 * num_cases * (num_cases + 1))))
 
 
 def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
@@ -648,13 +795,14 @@ def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
     plt.step(possitions, thresholds, label='Thresholds', linestyle='--', color='black')
 
     plt.xlim(-0.5, len(list_p_values) - 0.5)
-    #plt.tight_layout()
+    # plt.tight_layout()
     plt.legend()
     # Mostrar el gráfico
     return plt.gcf()
 
 
-def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control: str = None, type_rank: str = "Friedman"):
+def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control: str = None,
+                        type_rank: str = "Friedman"):
     
     all_vs_all = control is None
     algorithm_names = list(ranks.keys())
@@ -666,7 +814,7 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
                        }
     results = []
 
-    if not(type_rank in available_ranks.keys()):
+    if not (type_rank in available_ranks.keys()):
         print(f"Error: Test of Rankings not available, stop functions")
         return -1
 
@@ -690,12 +838,15 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
     return results
 
 
-def create_dataframe_results(comparisons: list, z_statistics: list, p_values: list, alphas: list, adj_p_values: list, adj_alphas: list):
+def create_dataframe_results(comparisons: list, z_statistics: list, p_values: list, alphas: list, adj_p_values: list,
+                             adj_alphas: list):
 
-    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values, adj_alphas)]
+    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values,
+                                                                                                      adj_alphas)]
 
-    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": z_statistics, "p-value": p_values, "Adjusted alpha": adj_alphas, 
-                            "Adjusted p-value": adj_p_values, "alpha": alphas, "Results": results_h0})
+    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": z_statistics, "p-value": p_values,
+                            "Adjusted alpha": adj_alphas, "Adjusted p-value": adj_p_values, "alpha": alphas,
+                            "Results": results_h0})
 
     return results
 
@@ -735,7 +886,7 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
 
 
 def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
-               type_rank: str = "Friedman", verbose: bool = False):
+         type_rank: str = "Friedman", verbose: bool = False):
     
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
@@ -755,8 +906,8 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
     adj_alphas, _ = zip(*adj_alphas)
 
-    adj_p_values = [max(((num_of_comparisons - j) * p_values_with_index[j][1], p_values_with_index[j][0]) for j in range(i+1))
-                    for i in range(num_of_comparisons)]
+    adj_p_values = [max(((num_of_comparisons - j) * p_values_with_index[j][1], p_values_with_index[j][0]) for j in
+                        range(i+1)) for i in range(num_of_comparisons)]
 
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
 
@@ -780,9 +931,8 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     return results, figure
 
 
-
 def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
-               type_rank: str = "Friedman", verbose: bool = False):
+            type_rank: str = "Friedman", verbose: bool = False):
     
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
@@ -797,13 +947,15 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
     # Creo que debería de ser en vez de (num_algorithm - 1) el número de comparaciones
-    adj_alphas = [(1- (1-alpha)**(num_of_comparisons - index), value[0]) for index, value in enumerate(p_values_with_index)]
+    adj_alphas = [(1 - (1-alpha)**(num_of_comparisons - index), value[0]) for index, value in
+                  enumerate(p_values_with_index)]
     adj_alphas = sorted(adj_alphas, key=lambda x: x[1])
 
     adj_alphas, _ = zip(*adj_alphas)
 
     # Creo que debería de ser en vez de (num_algorithm ) el número de comparaciones + 1
-    adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons-j), p_values_with_index[j][0]) for j in range(i+1)], key= lambda x:x[0]) for i in range(num_of_comparisons)]
+    adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons-j), p_values_with_index[j][0]) for j
+                         in range(i+1)], key=lambda x: x[0]) for i in range(num_of_comparisons)]
 
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
 
@@ -828,7 +980,7 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
 
 
 def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
-               type_rank: str = "Friedman", verbose: bool = False):
+           type_rank: str = "Friedman", verbose: bool = False):
     
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
@@ -843,17 +995,17 @@ def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
 
-    num_comparisons = len(comparisons)
-
-    adj_alphas = [(1- (1-alpha)**(num_of_comparisons/float(index+1)), value[0]) for index, value in enumerate(p_values_with_index)]
+    adj_alphas = [(1 - (1-alpha)**(num_of_comparisons/float(index+1)), value[0]) for index, value in
+                  enumerate(p_values_with_index)]
     adj_alphas = sorted(adj_alphas, key=lambda x: x[1])
     adj_alphas, _ = zip(*adj_alphas)
 
-    adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons/float(j+1)), p_values_with_index[j][0]) for j in range(i+1)], key= lambda x:x[0]) for i in range(num_of_comparisons)]
+    adj_p_values = [max([(1 - (1 - p_values_with_index[j][1])**(num_of_comparisons/float(j+1)),
+                          p_values_with_index[j][0]) for j in range(i+1)], key=lambda x: x[0]) for i in
+                    range(num_of_comparisons)]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
     adj_p_values = [min(i, 1) for i in adj_p_values]
-
 
     alphas = [alpha] * len(adj_alphas)
     # Create Struct
@@ -873,7 +1025,7 @@ def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
 
 
 def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
-               type_rank: str = "Friedman", verbose: bool = False):
+           type_rank: str = "Friedman", verbose: bool = False):
     
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
@@ -894,7 +1046,8 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     adj_alphas, _ = zip(*adj_alphas)
 
     # Algorithm that calculates the adjusted p-values for Hommel (ref Fig. 2 )
-    # Art: Advanced nonparametric tests for multiple comparisons in the design of experiments in computational intelligence and data mining: Experimental analysis of power
+    # Art: Advanced nonparametric tests for multiple comparisons in the design of experiments in computational
+    # intelligence and data mining: Experimental analysis of power
     
     length = len(p_values)
     adj_p_values = list(p_values).copy()
@@ -916,7 +1069,6 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
             c_list[i] = min(c_min, m * p_values[indices_sorted[i]])
             adj_p_values[indices_sorted[i]] = max(adj_p_values[indices_sorted[i]], c_list[i])
 
-
     alphas = [alpha] * len(adj_alphas)
     # Create Struct
     results = create_dataframe_results(comparisons, z_bonferroni, p_values, alphas, adj_p_values, adj_alphas)
@@ -935,17 +1087,14 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
 
 
 def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
-               type_rank: str = "Friedman", verbose: bool = False):
+        type_rank: str = "Friedman", verbose: bool = False):
     
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
 
     comparisons, z_bonferroni, p_values = zip(*results_comp)
-    
-    # num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if control is None else num_algorithm - 1
-    num_of_comparisons = len(comparisons)
-    
+
     # Adjusted alpha and p_values
     length = len(p_values)
     adj_alphas = [0.0] * length
@@ -967,7 +1116,6 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
 
-
     alphas = [alpha] * len(adj_alphas)
     # Create Struct
     results = create_dataframe_results(comparisons, z_bonferroni, p_values, alphas, adj_p_values, adj_alphas)
@@ -986,7 +1134,7 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
 
 def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
-               type_rank: str = "Friedman", verbose: bool = False):
+       type_rank: str = "Friedman", verbose: bool = False):
     
     algorithm_names = list(ranks.keys())
     num_algorithm = len(ranks.keys())
@@ -997,18 +1145,16 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
 
     comparisons, z_bonferroni, p_values = zip(*results_comp)
-    
-    # num_of_comparisons = (num_algorithm * (num_algorithm - 1)) / 2.0 if control is None else num_algorithm - 1
-    num_of_comparisons = len(comparisons)
-    
+
     # Adjusted alpha and p_values
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
 
     print(p_values_with_index)
 
-    adj_p_values = [(p_values_with_index[i][1] / (p_values_with_index[i][1] + 1 - p_values_with_index[-1][1]), p_values_with_index[i][0]) for i in range(len(p_values))]
-    adj_p_values = sorted(adj_p_values, key=lambda x:x[1])
+    adj_p_values = [(p_values_with_index[i][1] / (p_values_with_index[i][1] + 1 - p_values_with_index[-1][1]),
+                     p_values_with_index[i][0]) for i in range(len(p_values))]
+    adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
     
     adj_alphas = [((1 - p_values_with_index[-1][1]) / (1 - alpha)) * alpha] * len(p_values)
@@ -1031,8 +1177,9 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
 
 def hochberg(ranks: dict, alpha: float = 0.05, control: str = None):
+    # TODO ADAPTARLO Y REVISAR ESTE
     algorithm_names = list(ranks.keys())
-    if not(control is None) and control not in algorithm_names:
+    if not (control is None) and control not in algorithm_names:
         print(f"Warning: Control algorithm don't found, we continue All VS All")
         control = None
 
@@ -1042,7 +1189,6 @@ def hochberg(ranks: dict, alpha: float = 0.05, control: str = None):
         for i in range(len(algorithm_names)):
             for j in range(i+1, len(algorithm_names)):
                 comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
-                # statistic_z = (ranks[algorithm_names[i]] - ranks[algorithm_names[j]]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
                 statistic_z = (ranks[algorithm_names[i]] - ranks[algorithm_names[j]])
                 p_value = stats.get_p_value_normal(statistic_z)
                 results_comp.append((comparisons, statistic_z, p_value))
@@ -1050,7 +1196,6 @@ def hochberg(ranks: dict, alpha: float = 0.05, control: str = None):
         for i in range(len(algorithm_names)):
             if index_control != i:
                 comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
-                # statistic_z = (ranks[algorithm_names[index_control]] - ranks[algorithm_names[i]]) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
                 statistic_z = (ranks[algorithm_names[index_control]] - ranks[algorithm_names[i]])
                 p_value = stats.get_p_value_normal(statistic_z)
                 results_comp.append((comparisons, statistic_z, p_value))
@@ -1079,31 +1224,7 @@ def hochberg(ranks: dict, alpha: float = 0.05, control: str = None):
 
 
 def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "Friedman"):
-    """
-    Perform a Shaffer post-hoc test using the pivot quantities obtained by a ranking test.
-
-    Parameters
-    ----------
-    ranks : dict
-        A dictionary with format 'groupname': rank value.
-    alpha : float
-    Returns
-    ----------
-    comparisons : list
-        Strings identifier of each comparison with format 'group_i vs group_j'.
-    z_values : list
-        The computed Z-value statistic for each comparison.
-    p_values : list
-        The associated p-value from the Z-distribution.
-    adjusted_p_values : list
-        The associated adjusted p-values compared with a significance level.
-    """
-
     def _calculate_independent_tests(num: int):
-        """
-        Calculate the number of independent test hypotheses when using All vs All strategy
-        for comparing the given number of groups.
-        """
         if num == 0 or num == 1:
             return {0}
         else:
@@ -1128,7 +1249,8 @@ def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "
 
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
-    adj_p_values = [(min(max(t[j] * p_values_with_index[j][1] for j in range(i + 1)), 1), p_values_with_index[0]) for i in range(m)]
+    adj_p_values = [(min(max(t[j] * p_values_with_index[j][1] for j in range(i + 1)), 1), p_values_with_index[0]) for i
+                    in range(m)]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
     # TODO REVISAR CALCULOS

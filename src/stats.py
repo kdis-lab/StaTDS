@@ -68,9 +68,7 @@ def binomial_coef(n: int, k: int):
         return math.nan
 
     if n == 0 or k < 0 or n - k + 1 == 0:
-        return 0 
-
-    a = math.gamma(n + 1) / (math.gamma(k + 1) * math.gamma(n - k + 1))
+        return 0
 
     return math.gamma(n + 1) / (math.gamma(k + 1) * math.gamma(n - k + 1))
 
@@ -80,7 +78,7 @@ def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
         Calculate the p-value of a binomial distribution.
     :param z_value: The z-value for which the CDF is calculated.
     :param k_degrees_of_freedom: The degrees of freedom of the chi-squared distribution.
-    :param alpha:
+    :param alpha: The significance level for which the critical value is needed.
     :return: p_value and cv_to_alpha
     """
     def calcular_pdf_chi2(value, df):
@@ -237,6 +235,11 @@ def get_cv_willcoxon(num_problems: int, alpha: float):
 
 
 def get_shapiro_weights(n_weights):
+    """
+        Retrieve weights a_i for any given sample size n_weights.
+    :param n_weights: The number of samples.
+    :return: Weights a_i list.
+    """
     table = pd.read_csv(current_directory / "assets/statistical_tables/shapiro_weights.csv")
     row_table = table[table["n"] == n_weights].to_numpy()
     first_nan_index = np.argmax(np.isnan(row_table))
@@ -245,6 +248,13 @@ def get_shapiro_weights(n_weights):
 
 
 def get_p_value_shapier(num_samples: int, statistics_w: float):
+    """
+        Retrieve the p-value from a Shapiro-Wilk test for a given number of
+        samples and statistics.
+    :param num_samples: The number of samples for which the critical value is needed.
+    :param statistics_w: The statistics for which the p-value is calculated.
+    :return: The p-value from Shapiro-Wilk test.
+    """
     df = pd.read_csv(current_directory / "assets/statistical_tables/shapiro_table.csv")
     selected_num_samples = min(df["n"].to_numpy(), key=lambda num: abs(num - num_samples))
     columns_table = list(df.columns)[1:]
