@@ -162,3 +162,18 @@
 .button:hover{
     background-color: #276E90;
 }
+
+.icon_button {
+    height: 2em;
+    margin-right: 0.5em;
+}
+
+.container_card {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around; /* Esto distribuirá el espacio uniformemente alrededor de tus tarjetas */
+  flex: 0 1 auto; /* Esto permite que tus tarjetas se encogen y crezcan pero mantengan su tamaño automático basado en el contenido */
+  margin: 10px; /* Esto añade un poco de espacio entre las tarjetas */
+  justify-content: center; /* Centra el contenido verticalmente */
+  height: 100%; /* Asegúrate de que la tarjeta tenga una altura para que el contenido pueda centrarse dentro de ella */
+}

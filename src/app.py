@@ -11,13 +11,15 @@ from datetime import datetime
 
 import multiprocessing
 
-#TODO Check imports
+# TODO Check imports
 
 import no_parametrics, parametrics, utils
 
 
 external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css"]
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+app.title = 'StaTDS: Statistical Tests for Data Science'
+# app._favicon = "images/logo-kdislab.png" # TODO Buscar un logo adecuado para la ventana del navegador
 # suppress_callback_exceptions=True Esto no es una buena práctica pero es la única forma de mantener el control dinámico
 
 
@@ -25,7 +27,8 @@ with open("assets/app/README.md", 'r') as film:
     readme_content = film.read()
 
 
-reference_content = "Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)"
+reference_content = ("Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, " +
+                     "Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)")
 
 bibtext_content = '''
                     ```latex
@@ -38,6 +41,7 @@ bibtext_content = '''
                     ```
                   '''
 
+
 def generate_text_sample():
     with open("assets/app/sample_dataset.csv", "r") as f:
         text = f.read()
@@ -46,14 +50,16 @@ def generate_text_sample():
 
 def generate_navigator_menu():
     menus_2 = [
-                {"title": html.Img(src="assets/images/logo-StaTDS-without-background.png", style={"width": "4.5em", "height": "4.5em"}),
-                 "href": "home", "icon": "mdi:home-outline", "className":"logo-menu"},
+                {"title": html.Img(src="assets/images/logo-StaTDS-without-background.png", style={"width": "4.5em",
+                                                                                                  "height": "4.5em"}),
+                 "href": "home", "icon": "mdi:home-outline", "className": "logo-menu"},
                 {"title": html.Img(src="assets/images/logo-kdislab.png", style={"width": "4em", "height": "1.5em"}),
-                 "href": "https://www.uco.es/kdis/", "icon": "mdi:home-outline", "className":"logo-kdis-menu"},
+                 "href": "https://www.uco.es/kdis/", "icon": "mdi:home-outline", "className": "logo-kdis-menu"},
               ]
     menus = [
-                {"title": "Data Analysis", "href": "data_analysis", "className":"item-menu"},
-                {"title": "Normality & Homoscedasticity", "href": "normality_homoscedasticity", "className":"item-menu"},
+                {"title": "Data Analysis", "href": "data_analysis", "className": "item-menu"},
+                {"title": "Normality & Homoscedasticity", "href": "normality_homoscedasticity",
+                 "className": "item-menu"},
             ]
     import_button = dbc.Button(children="Import Data", id="import-Data", outline=True, className="menu item-menu")
     export_button = dbc.Button(children="Export Results", id="export-data", outline=True, className="menu item-menu")
@@ -61,11 +67,12 @@ def generate_navigator_menu():
                         href=item["href"] if "href" in item.keys() else None, className="menu") for item in menus]
 
     content_2 = [dbc.Button(children=[html.Div(item["title"], className=item["className"])],
-                        href=item["href"] if "href" in item.keys() else None, className="logos-menu", color=None) for item in menus_2]
+                            href=item["href"] if "href" in item.keys() else None, className="logos-menu", color=None)
+                 for item in menus_2]
 
     download_file = dcc.Download(id="download-text")
-    content = content_2 + content + [import_button, export_button, generate_import_data_page(), generate_export_table_page(),
-                         download_file]
+    content = content_2 + content + [import_button, export_button, generate_import_data_page(),
+                                     generate_export_table_page(), download_file]
     return html.Div(
         children=content, className="navigator_menu"
     )
@@ -162,17 +169,54 @@ def generate_tabla_of_dataframe(df: pd.DataFrame, height_table: str = '30em'):
 
 def generate_home_page(dataframe: pd.DataFrame):
     global readme_content, reference_content, bibtext_content
-    code_style = {
-        'width': '100%', 'height': '200px',
-        'boxShadow': '0 0 0 1px #ddd', 'overflowY': 'scroll',
-        'background': '#f7f7f7', 'border': 'none', 'borderRadius': '4px',
-        'fontFamily': 'monospace', 'fontSize': '16px', 'padding': '10px',
-        'color': '#333'
-    }
 
+    info_authors = [
+        {"title": "Christian Luna Escudero",
+         "description": "graduated in Computer Science with honors at the University of Córdoba (Spain) in 2023. He "
+                        "is currently studying the Master's Degree in Research in Artificial Intelligence | AEPIA, "
+                        "while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group.",
+         "email": "i82luesc@uco.es", "image": "assets/images/i82luesc.png"},
+        {"title": "Antonio Rafael Moya Martín-Castaño",
+         "description": "is a Substitute Professor of [Computing Sciences and Artificial Intelligence| ESTO NO ES "
+                        "CREO]* at the University of Córdoba.",
+         "email": "amoya@uco.es", "image": "assets/images/amoya.png"},
+        {"title": "José María Luna Ariza",
+         "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of "
+                        "Córdoba. José M. Luna graduated in Computer Science with honors from the University of "
+                        "Córdoba (Spain) in 2009, received his MSc from the University of Granada in 2011, "
+                        "and completed his PhD with the highest distinction in 2014. His PhD, funded by the Spanish "
+                        "Ministry of Education, focused on association rule extraction and included a research stint "
+                        "with Prof. Mykola Pechenizkiy at TU/e. Currently, he holds a JdC PostDoc grant from the "
+                        "Spanish Ministry of Economy and Competitiveness, is the author of 'Pattern Mining with "
+                        "Evolutionary Algorithms', and has published over 30 papers. His research specializes in "
+                        "pattern mining, particularly in patterns in flexible data.",
+         "email": "jmluna@uco.es", "image": "assets/images/jmluna.png"},
+        {"title": "Sebastián Ventura Soto",
+         "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of "
+                        "Córdoba. His teaching is devoted to computer programming, artificial intelligence, "
+                        "and data mining in undergraduate and graduate (doctoral) studies. His research lab is "
+                        "developed as head of the Knowledge Discovery and Intelligent Systems (KDIS) research group, "
+                        "and it is focused on computational intelligence, data science, and their applications.",
+         "email": "sventura@uco.es", "image": "assets/images/sventura.png"},
+    ]
+
+    row_authors = [dbc.Row([
+        dbc.Col(dbc.CardImg(src=author["image"], className="img-fluid rounded-start"), className="col-md-4"),
+        dbc.Col(dbc.CardBody(
+            [html.H4(author["title"], className="card-title"),
+             html.P(author["description"], className="card-text"),
+             html.Small(author["email"], className="card-text text-muted")]
+        ), className="col-md-8"
+        )
+    ], className="g-0 d-flex align-items-center")
+        for author in info_authors]
+    about_authors = [dbc.Card(i, className="mb-3 card", style={"width": "40em", "margin-right": "1em"}) for i in
+                     row_authors]
+    foother_authors = html.Div(about_authors, className="container_card")
+    # TODO CAMBIAR ESTO DE ARRIBA PARA QUE LOS AUTORES SALGAN UNO AL LADO DEL OTRO
     main_content = html.Div(
         children=[
-            html.H1(children='Statistical Test App', className="title-app"),
+            html.H1(children='StaTDS: Statistical Tests for Data Science', className="title-app"),
             html.Div(id="table-content", children=generate_tabla_of_dataframe(dataframe),
                      className="table-info hidden" if dataframe is None or dataframe.empty else "table-info"),
             html.Div(children=[html.P(readme_content)],
@@ -181,8 +225,7 @@ def generate_home_page(dataframe: pd.DataFrame):
                 dbc.CardBody(
                     [
                         html.H5("Reference", className="card-title"),
-                        html.P(reference_content, className="card-text",
-                        ),
+                        html.P(reference_content, className="card-text"),
                         dcc.Markdown(bibtext_content)
                     ]
                 ),
@@ -191,11 +234,18 @@ def generate_home_page(dataframe: pd.DataFrame):
             # TODO Cambiar la forma que se ven los botones
             html.Div([
                 dbc.ButtonGroup([
-                    dbc.Button([html.Img(src='assets/images/logo-send-email.png', style={"height":"2em", "margin-right":"0.5em"}), "Contact email"], href="mailto:i82luesc@uco.es?Subject=[StaTDS]", className="button", color="secondary", outline=True),
-                    dbc.Button([html.Img(src='assets/images/logo-github.png', style={"height":"2em", "margin-right":"0.5em"}), "Source on Gitlab"], href="https://github.com/kdis-lab/statistical_lib", className="button", color="secondary", outline=True),
-                    dbc.Button([html.Img(src='assets/images/logo-python.png', style={"height":"2em", "margin-right":"0.5em"}), "Python Doc"], href="https://github.com/kdis-lab/statistical_lib", className="button",color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-send-email.png', className="icon_button"),
+                                "Contact email"], href="mailto:i82luesc@uco.es?Subject=[StaTDS]", className="button",
+                               color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-github.png', className="icon_button"),
+                                "Source on Gitlab"], href="https://github.com/kdis-lab/statistical_lib",
+                               className="button", color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-python.png', className="icon_button"),
+                                "Python Doc"], href="https://github.com/kdis-lab/statistical_lib", className="button",
+                               color="secondary", outline=True),
                     ]),
-            ], className="p-4")
+            ], className="p-4"),
+            foother_authors
         ]
     )
 
@@ -320,10 +370,10 @@ def generate_alpha_form(multiple_alpha: bool = False):
             html.Div([
                 html.Label('Optimization Criterion'),
                 html.Div([
-                        html.Label('Min', style={"margin-right":"0.95em", "margin-left":"0.95em"}),
+                        html.Label('Min', style={"margin-right": "0.95em", "margin-left": "0.95em"}),
                         daq.BooleanSwitch(id='criterion_switch', on=False),
-                        html.Label('Max', style={"margin-left":"1em"})
-                    ],style={'display': 'flex', 'align-items': 'center'})])
+                        html.Label('Max', style={"margin-left": "1em"})
+                    ], style={'display': 'flex', 'align-items': 'center'})])
             ]
 
 
@@ -596,7 +646,7 @@ def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: flo
     rankings = pd.DataFrame({i[0]: [round(i[1], 5)] for i in rankings_with_label.items()})
     table = generate_tabla_of_dataframe(rankings, height_table="7.2em")
     content = [title, test_subtitle, test_result, table]
-    if not(columns[1] is None):
+    if not (columns[1] is None):
         available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
                               "Bonferroni": no_parametrics.bonferroni,
                               "Li": no_parametrics.li,
@@ -640,22 +690,15 @@ def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: flo
         content.extend([post_hoc_subtitle, post_hoc_result])
     return html.Div(children=content)
 
+
 def generate_table_and_textarea(table_data, height, caption_text, id_val="textarea-dataset"):
     table = generate_tabla_of_dataframe(table_data, height_table=height)
     text_table = utils.dataframe_to_latex(table_data, caption=caption_text)
     textarea = dbc.Textarea(id=id_val, size="lg", value=text_table, style={'height': '200px'})
     return table, textarea
 
+
 def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
-    # TODO Cambiar esto cuando este el anova mejorado:
-
-    def anova_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_test(dataset, alpha_value)
-        return pd.DataFrame(), s, p, c, h
-
-    def anova_within_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_within_cases_test(dataset, alpha_value)
-        return pd.DataFrame(), s, p, c, h
 
     columns = list(parameters.values())
     # Se genera mediante la librería
@@ -720,8 +763,8 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         post_hoc_function = available_post_hoc[columns[1]]
 
         parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": parameters["criterion"], "verbose": False, "name_fig": "", "control": parameters["control"], 
-                                  "type_rank": columns[0]
+                                  "criterion": parameters["criterion"], "verbose": False, "name_fig": "",
+                                  "control": parameters["control"], "type_rank": columns[0]
                                   }
         args_functions = inspect.signature(post_hoc_function)
         args = {name: parameter.default for name, parameter in args_functions.parameters.items()
@@ -782,9 +825,9 @@ def create_data_table(names_exp, parameters_exp):
         if "post_hoc" in parameter.keys():
             # test = [parameter["test"], parameter["post_hoc"]]
             test = f"{parameter['test']}"
-            if not(parameter["post_hoc"] is None):
+            if not (parameter["post_hoc"] is None):
                 test += f", {parameter['post_hoc']}"
-                if "control" in parameter.keys() and not(parameter["control"] is None):
+                if "control" in parameter.keys() and not (parameter["control"] is None):
                     test += f" ({parameter['control']})"
         else:
             test = f"{parameter['test']} ({parameter['first_group']}, {parameter['second_group']})"
@@ -1002,7 +1045,7 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
                                       "Bartlett": parametrics.bartlett_test}
     content = []
     alpha = float(alpha)
-    if not(test_normality is None):
+    if not (test_normality is None):
         test_normality_function = available_normality_test[test_normality]
         columns = list(dataset.columns)
         statistic_list, p_value_list, cv_value_list, hypothesis_list = [], [], [], []
@@ -1023,7 +1066,7 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
 
         table = generate_tabla_of_dataframe(results_test, height_table=f"{4.2 * len(results_test)}em")
         content = [title, test_subtitle, table]
-    if not(test_homoscedasticity is None):
+    if not (test_homoscedasticity is None):
         test_homocedasticity_function = available_homocedasticity_test[test_homoscedasticity]
         statistic, p_value, cv_value, hypothesis = test_homocedasticity_function(dataset, alpha)
         if p_value is None:
@@ -1056,9 +1099,9 @@ def process_normality(n_clicks, reset, generate_pdf, alpha, test_normality, test
 
     dataset = pd.DataFrame(current_data)
     content = results_normality(dataset, alpha, test_normality, test_homoscedasticity)
-
+    # TODO PENSAR SI MERECE LA PENA PERMITIR GENERAR GRÁFICOS EN LA PARTE DE NORMALIDAD
     return html.Div(content), "", None
 
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
