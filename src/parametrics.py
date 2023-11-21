@@ -117,6 +117,47 @@ def kurtosis(data: np.array, bias: bool = True):
     return statistical_kurtosis
 
 
+def calculate_z_b_2(b2, n):
+    # Step 2: Calculate the mean and variance of b2
+    e_b2 = (3 * (n - 1)) / (n + 1)
+
+    var_b2 = (24 * n * (n - 2) * (n - 3)) / ((n + 1) ** 2 * (n + 3) * (n + 5))
+
+    var_b2 = (24 * n * (n - 2) * (n - 3)) / ((n + 1) ** 2 * (n + 3) * (n + 5))
+
+    # Step 3: Compute the standardized version of b2
+    x = (b2 - e_b2) / math.sqrt(var_b2)
+
+    # Step 4: Compute the third standardized moment of b2
+    beta2 = (6 * (n ** 2 - 5 * n + 2)) / ((n + 7) * (n + 9)) * np.sqrt(
+        (6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)))
+
+    beta2 = ((6 * (n ** 2 - 5 * n + 2)) / ((n + 7) * (n + 9))) * math.sqrt(
+        (6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)))
+
+    # Step 5: Compute A
+    a = 6 + 8.0 / beta2 * (2.0 / beta2 + math.sqrt((1 + (4.0 / (beta2 ** 2)))))
+
+    # Step 6: Compute Z(b2)
+    z_b2 = ((1 - (2.0 / (9 * a))) - ((1 - (2 / a)) / (1 + x * math.sqrt(2.0 / (a - 4)))) ** (1 / 3)) / math.sqrt(
+        2 / (9 * a))
+
+    return z_b2
+
+
+def calculate_z_b_1(b2, n):
+    y = b2 * math.sqrt(((n + 1) * (n + 3)) / (6.0 * (n - 2)))
+    beta2 = (3.0 * (n ** 2 + 27 * n - 70) * (n + 1) * (n + 3) /
+             ((n - 2.0) * (n + 5) * (n + 7) * (n + 9)))
+    w_2 = -1 + math.sqrt(2 * (beta2 - 1))
+    # delta = 1 / math.sqrt(math.log(w_2))
+    delta = 1 / math.sqrt(0.5 * math.log(w_2))
+    alpha = math.sqrt(2.0 / (w_2 - 1))
+    y = np.where(y == 0, 1, y)
+    z_b1 = delta * np.log(y / alpha + np.sqrt((y / alpha) ** 2 + 1))
+    return z_b1
+
+
 def d_agostino_pearson(data: np.array, alpha: float = 0.05):
     """
         Perform the D'Agostino and Pearson's omnibus test for normality. This test combines skew and kurtosis
@@ -145,13 +186,11 @@ def d_agostino_pearson(data: np.array, alpha: float = 0.05):
     kurt = kurtosis(sorted_data)
     num_samples = sorted_data.shape[0]
 
-    ses = math.sqrt((6 * num_samples * (num_samples - 1)) / ((num_samples - 2) * (num_samples + 1) * (num_samples - 3)))
-    sek = 2 * ses * math.sqrt((num_samples ** 2 - 1) / ((num_samples - 3) * (num_samples + 5)))
+    z_sqrt_b_1 = calculate_z_b_1(skew, num_samples)
 
-    standard_score_s = skew / ses
-    standard_score_k = kurt / sek
+    z_b_2 = calculate_z_b_2(kurt, num_samples)
 
-    statistic_dp = standard_score_s ** 2 + standard_score_k ** 2
+    statistic_dp = z_sqrt_b_1**2 + z_b_2**2
 
     # Calculate p-value with chi^2 with 2 degrees of freedom
     p_value, cv_value = stats.get_p_value_chi2(statistic_dp, 2, alpha=alpha)
@@ -513,7 +552,8 @@ def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     if statistical_f_anova < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
+    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()),
+                        np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
 
     mean_groups, std_dev_groups, std_error_groups = zip(*summary_results)
     content = {"Groups": names_groups, "Nº Samples": num_samples, "Mean": mean_groups, "Std. Dev.": std_dev_groups,
@@ -600,7 +640,8 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     if statistical_f_anova < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
+    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()),
+                        np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
 
     mean_groups, std_dev_groups, std_error_groups = zip(*summary_results)
     content = {"Groups": names_groups, "Nº Samples": num_samples, "Mean": mean_groups, "Std. Dev.": std_dev_groups,
