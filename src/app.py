@@ -11,6 +11,7 @@ from datetime import datetime
 
 import multiprocessing
 
+import graphs
 # TODO Check imports
 
 import no_parametrics, parametrics, utils
@@ -354,7 +355,7 @@ def import_data(n_clicks, textarea_value, separator, n_clicks_modal, current_ses
     return None, current_session, n_clicks_modal, "/"
 
 
-def generate_alpha_form(multiple_alpha: bool = False):
+def generate_alpha_form(multiple_alpha: bool = False, switch_selector: bool = True):
     available_alpha = [0.1, 0.05, 0.025, 0.01, 0.005, 0.001]
     title = "Alpha(s)" if multiple_alpha else "Alpha"
     return [html.Div([html.Label(title, style={"margin-left": "1em", "margin-right": "1em"}),
@@ -373,7 +374,8 @@ def generate_alpha_form(multiple_alpha: bool = False):
                         html.Label('Min', style={"margin-right": "0.95em", "margin-left": "0.95em"}),
                         daq.BooleanSwitch(id='criterion_switch', on=False),
                         html.Label('Max', style={"margin-left": "1em"})
-                    ], style={'display': 'flex', 'align-items': 'center'})])
+                    ], style={'display': 'flex', 'align-items': 'center'})
+            ], className="" if switch_selector else "hidden")
             ]
 
 
@@ -434,7 +436,7 @@ def create_test_form(columns: list, title: str, test_two_groups: list, test_mult
 def create_norm_form(title: str, test_two_groups: list, test_multiple_groups: list, multi_alpha: bool = False):
     return html.Div([
         html.H3(title),
-        html.Div(generate_alpha_form(multi_alpha), className="form-element"),
+        html.Div(generate_alpha_form(multi_alpha, switch_selector=False), className="form-element"),
         html.H5('Normality'),
         html.Div(generate_selector_test(test_two_groups, "selector_normality"), className="form-element"),
         html.H5('Homoscedasticity'),
@@ -602,11 +604,11 @@ def prueba_paralelizada(args, queue):
     if type(results) is pd.DataFrame:
         object_result = [results.to_dict()]
     else:
-        if type(results[0]) is pd.DataFrame:
+        if type(results) is tuple and type(results[0]) is pd.DataFrame:
             object_result = [results[0].to_dict()]
-        fig = results[-1]
+        fig = results[-1] if type(results) is tuple else results
         buf = io.BytesIO()  # in-memory files
-        fig.savefig(buf, format="png")
+        fig.savefig(buf, format="png", transparent=True)
         data = base64.b64encode(buf.getbuffer()).decode("utf8")  # encode to html elements
         buf.close()
         object_result.extend(["data:image/png;base64,{}".format(data)])
@@ -1035,7 +1037,6 @@ def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, te
     return generate_tabla_experiment(pd.DataFrame(tabla), height_table="15em"), new_user_experiments, None, None, None
 
 
-# TODO FALTA ARREGLAR LAS FUNCIONES DE LOS TEST PARAMETRICOS
 def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, test_homoscedasticity: str):
     available_normality_test = {"Shapiro-Wilk": parametrics.shapiro_wilk_normality,
                                 "D'Agostino-Pearson": parametrics.d_agostino_pearson,
@@ -1045,11 +1046,12 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
                                       "Bartlett": parametrics.bartlett_test}
     content = []
     alpha = float(alpha)
-    if not (test_normality is None):
+    if test_normality:
+        if test_normality not in available_normality_test:
+            raise ValueError(f"Test de normalidad '{test_normality}' no disponible.")
         test_normality_function = available_normality_test[test_normality]
         columns = list(dataset.columns)
-        statistic_list, p_value_list, cv_value_list, hypothesis_list = [], [], [], []
-
+        statistic_list, p_value_list, cv_value_list, hypothesis_list, graficos = [], [], [], [], []
         for i in range(1, len(columns)):
             statistic, p_value, cv_value, hypothesis = test_normality_function(dataset[columns[i]].to_numpy(), alpha)
             # TODO realizar el bucle
@@ -1057,6 +1059,26 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
             p_value_list.append(p_value)
             cv_value_list.append(cv_value)
             hypothesis_list.append(hypothesis)
+            result_queue = multiprocessing.Queue()
+            process = multiprocessing.Process(target=prueba_paralelizada, args=([graphs.qq_plot,
+                                                                                 {"data": dataset[
+                                                                                     columns[i]].to_numpy()}],
+                                                                                result_queue))
+            process.start()
+            process.join()
+            qq_plot_figure = result_queue.get()
+
+            result_queue = multiprocessing.Queue()
+            process = multiprocessing.Process(target=prueba_paralelizada, args=([graphs.pp_plot,
+                                                                                 {"data": dataset[
+                                                                                     columns[i]].to_numpy()}],
+                                                                                result_queue))
+            process.start()
+            process.join()
+            pp_plot_figure = result_queue.get()
+
+            graficos.append([html.Img(src=qq_plot_figure[-1], width="50%", height="50%"),
+                             html.Img(src=pp_plot_figure[-1], width="50%", height="50%")])
 
         test_subtitle = html.H5(f"{test_normality} test (significance level of {alpha})")
         title = html.H3(f"Normality Analysis", className="title")
@@ -1065,7 +1087,18 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
                                      "Results": hypothesis_list})
 
         table = generate_tabla_of_dataframe(results_test, height_table=f"{4.2 * len(results_test)}em")
-        content = [title, test_subtitle, table]
+
+        images = html.Div([
+            html.Button("Show Graphs pp-plot and qq-plot", id="collapse-button", n_clicks=0,
+                        style={"margin-top": "0.5em", "margin-bottom": "0.5em"}),
+            dbc.Collapse(dbc.Card(dbc.CardBody([html.Div([html.H3(columns[i+1]), html.Div([fig[0], fig[1]])]) for i, fig
+                                                in enumerate(graficos)])),
+                         id="collapse",
+                         is_open=False,
+                         )
+        ])
+        content = [title, test_subtitle, table, images]
+
     if not (test_homoscedasticity is None):
         test_homocedasticity_function = available_homocedasticity_test[test_homoscedasticity]
         statistic, p_value, cv_value, hypothesis = test_homocedasticity_function(dataset, alpha)
@@ -1101,6 +1134,17 @@ def process_normality(n_clicks, reset, generate_pdf, alpha, test_normality, test
     content = results_normality(dataset, alpha, test_normality, test_homoscedasticity)
     # TODO PENSAR SI MERECE LA PENA PERMITIR GENERAR GRÁFICOS EN LA PARTE DE NORMALIDAD
     return html.Div(content), "", None
+
+
+@app.callback(
+    Output("collapse", "is_open"),
+    [Input("collapse-button", "n_clicks")],
+    [State("collapse", "is_open")],
+)
+def toggle_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 
 if __name__ == '__main__':
