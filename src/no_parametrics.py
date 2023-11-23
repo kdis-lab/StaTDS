@@ -313,7 +313,7 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
     rankings_with_label = {j: i / num_cases for i, j in zip(ranks, columns_names[1:])}
 
     # Revisar esta parte
-    if num_cases > 15 or num_algorithm > 4:
+    if num_cases > 15 or num_algorithm >= 3:
         # P-value = P(chi^2_{k-1} >= Q)
         # Cargamos la tabla estadística
         reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm-1, alpha)
@@ -642,7 +642,7 @@ def graph_ranks(avg_ranks, names, cd=None, lowv=None, highv=None, width: float =
         return [a * width_factor for a in elements]
 
     # Upper left corner is (0,0).
-    ax.plot([0, 1], [0, 1], c="w")
+    ax.plot([0, 1], [0, 1], alpha=0)
     ax.set_xlim(0, 1)
     ax.set_ylim(1, 0)
 
@@ -746,15 +746,15 @@ def nemenyi(ranks: dict, num_cases: int, alpha: float = 0.05, verbose: bool = Fa
 
 # TODO REORGANIZAR Y REVISAR
 def calculate_z_friedman(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    return (rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
+    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
 
 
 def calculate_z_friedman_aling(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    return (rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases + 1)) / 6))
+    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases + 1)) / 6))
 
 
 def calculate_z_quade(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    return (rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) * (num_algorithm - 1)
+    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) * (num_algorithm - 1)
                                            ) / (18 * num_cases * (num_cases + 1))))
 
 

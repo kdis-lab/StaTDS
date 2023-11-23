@@ -117,7 +117,7 @@ def kurtosis(data: np.array, bias: bool = True):
     return statistical_kurtosis
 
 
-def calculate_z_b_2(b2, n):
+def calculate_z_b_2(b2, n):  # TODO Pensar si merece la pena cambiar el nombre a kurtosis_test y que devuelva el p_valor
     # Step 2: Calculate the mean and variance of b2
     e_b2 = (3 * (n - 1)) / (n + 1)
 
@@ -145,7 +145,7 @@ def calculate_z_b_2(b2, n):
     return z_b2
 
 
-def calculate_z_b_1(b2, n):
+def calculate_z_b_1(b2, n): # TODO Pensar si merece la pena cambiar el nombre a skewness_test y que devuelva el p_valor
     y = b2 * math.sqrt(((n + 1) * (n + 3)) / (6.0 * (n - 2)))
     beta2 = (3.0 * (n ** 2 + 27 * n - 70) * (n + 1) * (n + 3) /
              ((n - 2.0) * (n + 5) * (n + 7) * (n + 9)))
@@ -252,7 +252,7 @@ def kolmogorov_smirnov(data: np.array, alpha: float = 0.05):
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
     cv_value = None
 
-    return d_max, p_value, cv_value, hypothesis
+    return ks_statistic, p_value, cv_value, hypothesis
 
 
 def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'):
@@ -281,6 +281,16 @@ def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'
         sensitivity to departures from normality. The test statistic is computed based on the absolute deviations from
         the group centers and then compared against an F-distribution to obtain the p-value.
     """
+
+    def trimmed_mean(data, proportion_to_cut=0.1):
+        n = len(data)
+        if n == 0:
+            return float('nan')  # Return NaN if data is empty
+        cut_count = int(proportion_to_cut * n)
+        trimmed_data = sorted(data)[cut_count:-cut_count]
+
+        return sum(trimmed_data) / len(trimmed_data)
+
     if dataset.shape[1] < 2:
         raise "Error: Levene Test need at least two samples"
 
@@ -297,7 +307,7 @@ def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'
     elif center == "median":
         calculate_center = np.median
     else:
-        calculate_center = np.mean  # TODO Change for the trimmed mean
+        calculate_center = trimmed_mean
 
     factor_inicial = (num_total - num_groups) / (num_groups - 1)
 
