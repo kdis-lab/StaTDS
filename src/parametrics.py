@@ -81,6 +81,19 @@ def skewness(data: np.array, bias: bool = True):
     return statistical_skew
 
 
+def calculate_z_b_1(b2, n):  # TODO Pensar si merece la pena cambiar el nombre a skewness_test y que devuelva el p_valor
+    y = b2 * math.sqrt(((n + 1) * (n + 3)) / (6.0 * (n - 2)))
+    beta2 = (3.0 * (n ** 2 + 27 * n - 70) * (n + 1) * (n + 3) /
+             ((n - 2.0) * (n + 5) * (n + 7) * (n + 9)))
+    w_2 = -1 + math.sqrt(2 * (beta2 - 1))
+    # delta = 1 / math.sqrt(math.log(w_2))
+    delta = 1 / math.sqrt(0.5 * math.log(w_2))
+    alpha = math.sqrt(2.0 / (w_2 - 1))
+    y = np.where(y == 0, 1, y)
+    z_b1 = delta * np.log(y / alpha + np.sqrt((y / alpha) ** 2 + 1))
+    return z_b1
+
+
 def kurtosis(data: np.array, bias: bool = True):
     """
         Calculate the kurtosis of the given data. Kurtosis is a measure of the "tailedness" of the probability
@@ -123,14 +136,10 @@ def calculate_z_b_2(b2, n):  # TODO Pensar si merece la pena cambiar el nombre a
 
     var_b2 = (24 * n * (n - 2) * (n - 3)) / ((n + 1) ** 2 * (n + 3) * (n + 5))
 
-    var_b2 = (24 * n * (n - 2) * (n - 3)) / ((n + 1) ** 2 * (n + 3) * (n + 5))
-
     # Step 3: Compute the standardized version of b2
     x = (b2 - e_b2) / math.sqrt(var_b2)
 
     # Step 4: Compute the third standardized moment of b2
-    beta2 = (6 * (n ** 2 - 5 * n + 2)) / ((n + 7) * (n + 9)) * np.sqrt(
-        (6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)))
 
     beta2 = ((6 * (n ** 2 - 5 * n + 2)) / ((n + 7) * (n + 9))) * math.sqrt(
         (6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)))
@@ -143,19 +152,6 @@ def calculate_z_b_2(b2, n):  # TODO Pensar si merece la pena cambiar el nombre a
         2 / (9 * a))
 
     return z_b2
-
-
-def calculate_z_b_1(b2, n): # TODO Pensar si merece la pena cambiar el nombre a skewness_test y que devuelva el p_valor
-    y = b2 * math.sqrt(((n + 1) * (n + 3)) / (6.0 * (n - 2)))
-    beta2 = (3.0 * (n ** 2 + 27 * n - 70) * (n + 1) * (n + 3) /
-             ((n - 2.0) * (n + 5) * (n + 7) * (n + 9)))
-    w_2 = -1 + math.sqrt(2 * (beta2 - 1))
-    # delta = 1 / math.sqrt(math.log(w_2))
-    delta = 1 / math.sqrt(0.5 * math.log(w_2))
-    alpha = math.sqrt(2.0 / (w_2 - 1))
-    y = np.where(y == 0, 1, y)
-    z_b1 = delta * np.log(y / alpha + np.sqrt((y / alpha) ** 2 + 1))
-    return z_b1
 
 
 def d_agostino_pearson(data: np.array, alpha: float = 0.05):
@@ -309,20 +305,20 @@ def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'
     else:
         calculate_center = trimmed_mean
 
-    factor_inicial = (num_total - num_groups) / (num_groups - 1)
-
     center_of_groups = [calculate_center(dataset[i]) for i in names_groups]
 
     z_ij = [abs(dataset[names_groups[i]] - center_of_groups[i]).to_numpy() for i in range(len(names_groups))]
 
     z_bar_i = np.array([np.mean(i) for i in z_ij])
     z_bar = [i * j for i, j in zip(z_bar_i, num_samples)]
-    z_bar = np.sum(z_bar)
+    z_bar = np.sum(z_bar) / num_total
 
-    numer = np.sum(num_samples * (z_bar_i - z_bar) ** 2)
+    numer = (num_total - len(names_groups)) * np.sum(num_samples * (z_bar_i - z_bar) ** 2)
     dvar = np.sum([np.sum((z_ij[i] - z_bar_i[i]) ** 2, axis=0) for i in range(num_groups)])
 
-    statistic_levene = factor_inicial * (numer / dvar)
+    denom = (len(names_groups) - 1) * dvar
+
+    statistic_levene = (numer / denom)
 
     # TODO Calculate P-Valor F Distribution with alpha, k-1, N-k (Revisar tras hablar)
     # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
@@ -373,18 +369,18 @@ def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
 
     std_groups = [np.std(dataset[i]) for i in names_groups]
 
-    pooled_variance = np.sum([((num_samples[i] - 1) * (std_groups[i] ** 2)) / (num_total - num_groups) for i in
-                              range(num_groups)])
+    pooled_variance = (np.sum([((num_samples[i] - 1) * (std_groups[i] ** 2)) for i in range(num_groups)]) /
+                       (num_total - num_groups) * 1.0)
 
-    numerator = (num_total - num_groups) * math.log(pooled_variance ** 2) - (np.sum([(num_samples[i] - 1) *
-                                                                                     math.log(std_groups[i] ** 2)
-                                                                                     for i in range(num_groups)]))
+    numerator = (num_total - num_groups) * math.log(pooled_variance) - (np.sum([(num_samples[i] - 1) *
+                                                                                math.log(std_groups[i] ** 2)
+                                                                                for i in range(num_groups)]))
 
-    denominator = 1 + (1/(3.0 * (num_groups - 1))) * (np.sum([1 / (i - 1.0) for i in num_samples]) -
-                                                      (1 / float(num_total - num_groups)))
+    denominator = 1.0 + (1.0 / (3.0 * (num_groups - 1))) * (np.sum([1.0 / (i - 1.0) for i in num_samples]) -
+                                                            (1 / float(num_total - num_groups)))
     statistical_bartlett = numerator / denominator
 
-    p_value, cv_value = stats.get_p_value_chi2(statistical_bartlett, num_groups-1, alpha=alpha)
+    p_value, cv_value = stats.get_p_value_chi2(statistical_bartlett, num_groups - 1, alpha=alpha)
 
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 

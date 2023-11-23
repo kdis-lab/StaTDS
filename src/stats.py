@@ -21,7 +21,7 @@ def get_p_value_normal(z_value):
     :param z_value: The z-value for which the p-value is calculated.
     :return: The p-value associated with the given z-value.
     """
-    p_value = 1 - get_cdf_normal(z_value)
+    p_value = 1 - get_cdf_normal(abs(z_value))
 
     return p_value
 
@@ -270,6 +270,6 @@ def get_p_value_shapier(num_samples: int, statistics_w: float):
 
     m = (p_value_2 - p_value_1) / (statistics_w_min_2 - statistics_w_min_1)
 
-    p_value = p_value_1 + m * (statistics_w - statistics_w_min_1)
+    p_value = abs(p_value_1 + m * (statistics_w - statistics_w_min_1))
 
     return p_value
