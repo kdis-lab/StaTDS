@@ -11,10 +11,10 @@ from datetime import datetime
 
 import multiprocessing
 
-import graphs
 # TODO Check imports
 
 import no_parametrics, parametrics, utils
+import normality, homoscedasticity
 
 
 external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css"]
@@ -37,7 +37,7 @@ bibtext_content = '''
                         author={Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)},
                         title={(StaTDS): name-article}, 
                         booktitle={journay}, 
-                        year={2015}
+                        year={2023}
                     }
                     ```
                   '''
@@ -942,7 +942,6 @@ def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_
     if generate_pdf is True:
         content.extend([html.Button("Download Text", id="btn-download-txt"),
                         dcc.Download(id="download-text")])
-        # TODO Poner que el nombre sea aleatorio con respecto al tiempo para que no haya solapamientos  
 
     send_file = None if name_file_pdf == "" else dcc.send_file(name_file_pdf)
     return html.Div(content), "", None, html.Div(content_exportable), send_file
@@ -1038,12 +1037,12 @@ def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, te
 
 
 def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, test_homoscedasticity: str):
-    available_normality_test = {"Shapiro-Wilk": parametrics.shapiro_wilk_normality,
-                                "D'Agostino-Pearson": parametrics.d_agostino_pearson,
-                                "Kolmogorov-Smirnov": parametrics.kolmogorov_smirnov,
+    available_normality_test = {"Shapiro-Wilk": normality.shapiro_wilk_normality,
+                                "D'Agostino-Pearson": normality.d_agostino_pearson,
+                                "Kolmogorov-Smirnov": normality.kolmogorov_smirnov,
                                 }
-    available_homocedasticity_test = {"Levene": parametrics.levene_test, 
-                                      "Bartlett": parametrics.bartlett_test}
+    available_homocedasticity_test = {"Levene": homoscedasticity.levene_test,
+                                      "Bartlett": homoscedasticity.bartlett_test}
     content = []
     alpha = float(alpha)
     if test_normality:
@@ -1054,13 +1053,12 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
         statistic_list, p_value_list, cv_value_list, hypothesis_list, graficos = [], [], [], [], []
         for i in range(1, len(columns)):
             statistic, p_value, cv_value, hypothesis = test_normality_function(dataset[columns[i]].to_numpy(), alpha)
-            # TODO realizar el bucle
             statistic_list.append(statistic)
             p_value_list.append(p_value)
             cv_value_list.append(cv_value)
             hypothesis_list.append(hypothesis)
             result_queue = multiprocessing.Queue()
-            process = multiprocessing.Process(target=prueba_paralelizada, args=([graphs.qq_plot,
+            process = multiprocessing.Process(target=prueba_paralelizada, args=([normality.qq_plot,
                                                                                  {"data": dataset[
                                                                                      columns[i]].to_numpy()}],
                                                                                 result_queue))
@@ -1069,7 +1067,7 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
             qq_plot_figure = result_queue.get()
 
             result_queue = multiprocessing.Queue()
-            process = multiprocessing.Process(target=prueba_paralelizada, args=([graphs.pp_plot,
+            process = multiprocessing.Process(target=prueba_paralelizada, args=([normality.pp_plot,
                                                                                  {"data": dataset[
                                                                                      columns[i]].to_numpy()}],
                                                                                 result_queue))

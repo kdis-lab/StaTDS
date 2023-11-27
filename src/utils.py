@@ -95,9 +95,9 @@ if available_fpdf:
                 the right, configured with different styles and alignments.
             :return:
             """
-            #self.reset_margin()
+            # self.reset_margin()
             # Logo (imagen) a la izquierda
-            self.image(current_directory / 'assets/images/logo.png', 10, 15, 33)  # Reemplaza 'tu_logo.png' con la ruta de tu imagen
+            self.image(current_directory / 'assets/images/logo.png', 10, 15, 33)
             # Texto a la derecha en tres filas distintas
             self.set_font("helvetica", "B", 15)
             # Moving cursor to the right:
@@ -425,9 +425,8 @@ def process_alpha_experiment(parameter):
                                  "ANOVA within cases"]
 
     struct = {}
-    # TODO PORQUE FALLA CUANOD LE PASO EL VALOR DEL ALPHA EN UNA VARIABLE
 
-    if not(float(parameter["alpha"]) in available_alpha):
+    if not (float(parameter["alpha"]) in available_alpha):
         raise LibraryError(f"Error: {parameter['alpha']} is not found in the list of available alphas")
 
     struct["alpha"] = float(parameter["alpha"])
