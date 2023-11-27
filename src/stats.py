@@ -32,7 +32,7 @@ def inverse_gaussian_cdf(value, mu: float = 1.0, lambda_: float = 1.0):
     :param value: The value for which the CDF is calculated.
     :param mu: The mean parameter of the distribution (default is 1.0).
     :param lambda_: The lambda parameter of the distribution (default is 1.0).
-    :return:
+    :return: The CDF of the inverse Gaussian distribution for the given value.
     """
     a = math.sqrt(lambda_ / value) * (value / mu - 1)
     b = - math.sqrt(lambda_ / value) * (value / mu + 1)
@@ -47,7 +47,7 @@ def get_p_value_binomial(num: int, statistical: int, probability: float = 0.5):
     :param num: The number of trials in the binomial distribution.
     :param statistical: The number of successful trials.
     :param probability: The probability of success in each trial (default is 0.5).
-    :return:
+    :return: The p-value associated with the given value.
     """
     # Calculate the p-value of binomial distribution
     comb = math.comb(num, statistical)
@@ -273,3 +273,99 @@ def get_p_value_shapier(num_samples: int, statistics_w: float):
     p_value = abs(p_value_1 + m * (statistics_w - statistics_w_min_1))
 
     return p_value
+
+
+def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
+    """
+        Calculate the p-value for a given F-statistic using the F-distribution. This function is used to determine the
+        significance of a test statistic from an ANOVA test, comparing the ratio of variances between and within groups.
+
+        :param value: The F-statistic value for which the p-value is to be calculated.
+        :param df_numerator: The degrees of freedom for the numerator, often corresponding to the number of groups minus
+                             one.
+        :param df_denominator: The degrees of freedom for the denominator, usually related to the total number of
+                               observations minus the number of groups.
+
+        :return: The p-value corresponding to the given F-statistic and degrees of freedom. This p-value indicates the
+                 probability of observing a value at least as extreme as the F-statistic under the null hypothesis.
+
+        Note: The calculation of the p-value depends on the degrees of freedom for both the numerator and the
+        denominator, and the F-statistic itself.
+    """
+    def stat_com(q, i, j, b):
+        """
+            Calculate a statistical component used in the computation of p-values for certain distributions,
+            such as the F-distribution. This function is a helper function and is typically used within other
+            statistical functions to simplify their calculations.
+
+            :param q: A parameter typically representing a ratio of variance or a transformed probability value.
+            :param i: The starting value for a series in the computation, usually relating to degrees of freedom or
+                      similar metrics.
+            :param j: The ending value for the series in the computation.
+            :param b: A base value used in the calculation, often related to degrees of freedom or other distribution
+                      parameters.
+
+            :return: The calculated statistical component based on the input parameters. This value contributes to the
+                     overall calculation of a p-value or other statistical measures in larger functions.
+        """
+        zz = 1
+        z = zz
+        aux = i
+        while aux <= j:
+            zz *= q * aux / (aux - b)
+            z += zz
+            aux += 2
+        return z
+    x = df_denominator / (df_numerator * value + df_denominator)
+    if df_numerator % 2 == 0:
+        return (stat_com(1 - x, df_denominator, df_numerator + df_denominator - 4, df_denominator - 2) *
+                math.pow(x, df_denominator / 2.0))
+    if df_denominator % 2 == 0:
+        return (1 - stat_com(x, df_numerator, df_numerator + df_denominator - 4, df_numerator - 2) *
+                math.pow(1 - x, df_numerator / 2.0))
+
+    th = math.atan(math.sqrt(df_numerator * value / df_denominator))
+    a = th / (math.pi / 2.0)
+    sth = math.sin(th)
+    cth = math.cos(th)
+    if df_denominator > 1:
+        a += sth * cth * stat_com(cth ** 2, 2, df_denominator - 3, -1) / (math.pi / 2.0)
+    if df_numerator == 1:
+        return 1 - a
+
+    c = 4 * stat_com(sth ** 2, df_denominator + 1, df_numerator + df_denominator - 4,
+                     df_denominator - 2) * sth * math.pow(cth, df_denominator) / math.pi
+    if df_denominator == 1:
+        return 1 - a + c / 2.0
+
+    k = 2
+    while k <= (df_denominator - 1) / 2.0:
+        c *= k / (k - 0.5)
+        k += 1
+    return 1 - a + c
+
+
+def chi_sq(z_value: float, k_degrees_of_freedom: int):
+    if k_degrees_of_freedom == 1 and z_value > 1000:
+        return 0
+    if z_value > 1000 or k_degrees_of_freedom > 1000:
+        q = chi_sq((z_value - k_degrees_of_freedom) ** 2 / (2 * k_degrees_of_freedom), 1) / 2
+        return q if z_value > k_degrees_of_freedom else 1 - q
+
+    p = math.exp(-0.5 * z_value)
+    if k_degrees_of_freedom % 2 == 1:
+        p *= math.sqrt(2 * z_value / math.pi)
+
+    k = k_degrees_of_freedom
+    while k >= 2:
+        p *= z_value / k
+        k -= 2
+
+    t = p
+    a = k_degrees_of_freedom
+    while t > 1e-10 * p:
+        a += 2
+        t *= z_value / a
+        p += t
+
+    return 1 - p
