@@ -382,13 +382,15 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
     ranks_j = [(df[i].sum()) ** 2 for i in columns_names]
     ranks_i = df[columns_names].sum(axis=1)
     ranks_i = (ranks_i ** 2).sum()
+    sum_ranks_j = sum(ranks_j)
+    sum_ranks_j /= num_algorithm
+    numerator = ((num_algorithm - 1) * (sum_ranks_j - ((num_algorithm * (num_cases ** 2) / 4.0) *
+                                                       (num_algorithm * num_cases + 1) ** 2)))
 
-    stadistic_friedman = ((num_algorithm - 1) * (sum(ranks_j) - (num_algorithm * ((num_cases ** 2) / 4.0) *
-                                                                 (num_algorithm * num_cases + 1) ** 2))) / (
-                             float(((num_algorithm * num_cases * (num_algorithm * num_cases + 1) *
-                                     (2 * num_algorithm * num_cases + 1)) / 6.) - (
-                                               1. / float(num_algorithm)) * ranks_i))
+    denominator = (num_algorithm * num_cases * (num_algorithm*num_cases + 1) * (2 * num_algorithm * num_cases + 1)) / 6
+    denominator = denominator - ranks_i
 
+    stadistic_friedman = numerator / denominator
     ranks = [df[i].mean() for i in columns_names]
     rankings_with_label = {j: i for i, j in zip(ranks, columns_names)}
 
@@ -404,7 +406,7 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
     if num_cases > 15 or num_algorithm > 4:
         # P-value = P(chi^2_{k-1} >= Q)
         # Cargamos la tabla estadística
-        reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm, alpha)
+        reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm - 1, alpha)
         if stadistic_friedman < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
             hypothesis_state = True
     else:
@@ -477,7 +479,7 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
     for index in df.index:
         row = np.array(df.loc[index][columns_names].values)
         r = df.loc[index]["Rank_Q_i"]
-        relative_size.append(list(r * (row - (num_algorithm + 1)/2.)))
+        relative_size.append(list(r * (row - (num_algorithm + 1)//2)))
         rankings_without_average_adjusting.append(list(row * r))
 
     relative_size_to_algorithm = [sum(row[j] for row in relative_size) for j in range(num_algorithm)]
@@ -485,32 +487,18 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
                                                        in range(num_algorithm)]
 
     rankings_avg = [w / (num_cases * (num_cases + 1) / 2.) for w in rankings_without_average_adjusting_to_algorithm]
-    """
-    rankings_cmp = [r / math.sqrt(num_algorithm * (num_algorithm + 1) * (2 * num_cases + 1) * (num_algorithm - 1) /
-                                  (18. * num_cases * (num_cases + 1))) for r in rankings_avg]
-    """
 
-    stadistic_a = sum(relative_size[i][j] ** 2 for i in range(num_cases) for j in range(num_algorithm))
+    stadistic_a = ((num_cases * (num_cases + 1) * (2*num_cases + 1) * num_algorithm * (num_algorithm + 1) *
+                    (num_algorithm-1)) / 72)
     stadistic_b = sum(s ** 2 for s in relative_size_to_algorithm) / float(num_cases)
-
     hypothesis_state = False
     stadistic_quade = None
     if stadistic_a - stadistic_b > 0.0000000001:
         stadistic_quade = (num_cases - 1) * stadistic_b / (stadistic_a - stadistic_b)
-
-        if num_cases > 15 or num_algorithm > 4:
-            # P-value = P(chi^2_{k-1} >= Q)
-            # Cargamos la tabla estadística
-            reject_value = stats.get_p_value_chi2(stadistic_quade, num_algorithm, alpha)
-            if stadistic_quade < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
-                hypothesis_state = True
-
-        else:
-            # No se puede usar la chi^2, debemos de usar las tablas de la distribución Q
-            reject_value = [None, stats.get_cv_q_distribution(num_cases, num_algorithm-1, alpha)]
-            if stadistic_quade < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
-                hypothesis_state = True
-
+        reject_value = stats.get_p_value_f(stadistic_quade, num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1))
+        if stadistic_quade < reject_value:  # valueFriedman < p(alpha >= chi^2)
+            hypothesis_state = True
+        reject_value = [reject_value, None]
     else:
         p_value = math.pow((1 / float(math.factorial(num_algorithm))), num_cases - 1)
         hypothesis_state = True if p_value >= alpha else False
@@ -744,18 +732,19 @@ def nemenyi(ranks: dict, num_cases: int, alpha: float = 0.05, verbose: bool = Fa
     return ranks_values, critical_distance_nemenyi, figure
 
 
-# TODO REORGANIZAR Y REVISAR
 def calculate_z_friedman(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
     return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
 
 
 def calculate_z_friedman_aling(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases + 1)) / 6))
+    # TODO Revisar
+    # return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases + 1)) / 6))
+    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases * num_algorithm + 1)) / 6))
 
 
 def calculate_z_quade(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) * (num_algorithm - 1)
-                                           ) / (18 * num_cases * (num_cases + 1))))
+    return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) *
+                                              (num_algorithm - 1)) / (18 * num_cases * (num_cases + 1))))
 
 
 def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
@@ -1102,17 +1091,18 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
     adj_alphas[length-1], adj_alphas[length-2] = alpha, alpha / 2.0 
     adj_p_values[length - 1], adj_p_values[length - 2] = 1, 2
-    
+
     for i in range(3, length + 1):
         sum_factor_1 = sum(alpha ** j for j in range(1, i-1))
         sum_factor_2 = sum(math.comb(i, j) * (adj_alphas[(length - 2) - j] ** (i-j)) for j in range(1, i-2))
-        
         adj_alphas[length - i] = (sum_factor_1 - sum_factor_2) / float(i)
         adj_p_values[length - i] = adj_alphas[length - 1] / adj_alphas[length - i]
-    
     indices_sorted = sorted(range(len(p_values)), key=lambda x: p_values[x])
 
-    adj_p_values = [(r * p_values[p], p) for p, r in zip(indices_sorted, adj_p_values)]
+    adj_p_values = [[r * p_values[p], p] for p, r in zip(indices_sorted, adj_p_values)]
+    for i in range(len(adj_p_values)-2, -1, -1):
+        adj_p_values[i][0] = min(adj_p_values[i][0], adj_p_values[i + 1][0])
+
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
 
@@ -1150,8 +1140,6 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
 
-    print(p_values_with_index)
-
     adj_p_values = [(p_values_with_index[i][1] / (p_values_with_index[i][1] + 1 - p_values_with_index[-1][1]),
                      p_values_with_index[i][0]) for i in range(len(p_values))]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
@@ -1176,50 +1164,42 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     return results, figure
 
 
-def hochberg(ranks: dict, alpha: float = 0.05, control: str = None):
-    # TODO ADAPTARLO Y REVISAR ESTE
+def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
+             type_rank: str = "Friedman", verbose: bool = False):
+    num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
-    if not (control is None) and control not in algorithm_names:
-        print(f"Warning: Control algorithm don't found, we continue All VS All")
-        control = None
-
-    all_vs_all, index_control = (True, 0) if control is None else (False, algorithm_names.index(control))
-    results_comp = []
-    if all_vs_all:
-        for i in range(len(algorithm_names)):
-            for j in range(i+1, len(algorithm_names)):
-                comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
-                statistic_z = (ranks[algorithm_names[i]] - ranks[algorithm_names[j]])
-                p_value = stats.get_p_value_normal(statistic_z)
-                results_comp.append((comparisons, statistic_z, p_value))
-    else:
-        for i in range(len(algorithm_names)):
-            if index_control != i:
-                comparisons = algorithm_names[index_control] + " vs " + algorithm_names[i]
-                statistic_z = (ranks[algorithm_names[index_control]] - ranks[algorithm_names[i]])
-                p_value = stats.get_p_value_normal(statistic_z)
-                results_comp.append((comparisons, statistic_z, p_value))
-
+    results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
     comparisons, statistic_z, p_values = zip(*results_comp)
-    num_comparisons = len(comparisons)
+
+    num_of_comparisons = len(comparisons)
 
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
 
-    alphas = [(alpha * (index + 1) / num_comparisons, value[0]) for index, value in enumerate(p_values_with_index)]
-    alphas = sorted(alphas, key=lambda x: x[1])
+    alphas = [alpha] * len(p_values)
 
-    alphas, _ = zip(*alphas)
+    adj_alphas = [(alpha * (index + 1) / num_of_comparisons, value[0]) for index, value in
+                  enumerate(p_values_with_index)]
 
-    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values, alphas)]
+    adj_p_values = [[(num_of_comparisons - index) * value[1], value[0]] for index, value in
+                    enumerate(p_values_with_index)]
+    adj_alphas = sorted(adj_alphas, key=lambda x: x[1])
+    adj_alphas, _ = zip(*adj_alphas)
 
-    results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": statistic_z, "Adjusted p-value": p_values,
-                            "Adjusted alpha": alphas, "Results": results_h0})
+    for i in range(len(adj_p_values) - 2, -1, -1):
+        adj_p_values[i][0] = min(adj_p_values[i][0], adj_p_values[i + 1][0])
+
+    adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
+    adj_p_values, _ = zip(*adj_p_values)
+    results = create_dataframe_results(comparisons, statistic_z, p_values, alphas, adj_p_values, adj_alphas)
+
+    if verbose:
+        print(results)
 
     if control is None:
         control = algorithm_names[0]
 
-    figure = generate_graph_p_values(results, control, all_vs_all)
+    figure = generate_graph_p_values(results, control, control is None)
     return results, figure
 
 
@@ -1253,9 +1233,8 @@ def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "
                     in range(m)]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
-    # TODO REVISAR CALCULOS
-    alphas = [alpha] * len(p_values)
 
+    alphas = [alpha] * len(p_values)
     results = create_dataframe_results(comparisons, statistic_z, p_values, alphas, adj_p_values, alphas)
 
     control = algorithm_names[0]
