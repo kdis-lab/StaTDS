@@ -35,8 +35,8 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
 
 
 properties = {"title-header": "Inform elaborated with StaTDS",
-              "subtitle-header": "Version X.X",
-              "ref-library": "https://github.com/kdis-lab/StaTDS"}
+              "subtitle-header": "Version 1.0",
+              "ref-library": "https://github.com/kdis-lab/statds"}
 
 available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                   "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
@@ -97,23 +97,21 @@ if available_fpdf:
             """
             # self.reset_margin()
             # Logo (imagen) a la izquierda
-            self.image(current_directory / 'assets/images/logo.png', 10, 15, 33)
+            self.image(current_directory / 'assets/images/logo-kdislab.png', 40, 15, 33)
+            self.image(current_directory / 'assets/images/logo-StaTDS-without-background.png', 10, 4, 30)
             # Texto a la derecha en tres filas distintas
             self.set_font("helvetica", "B", 15)
             # Moving cursor to the right:
-            self.cell(160)
-            # Printing title:
+            self.set_xy(160, 10)
             self.cell(30, 10, properties["title-header"], align="R")
             # Performing a line break:
-            self.ln(6)
-            self.cell(160)
+            self.set_xy(160, 15)
             self.set_font("helvetica", "I", 11)
             self.cell(30, 10, properties["subtitle-header"], align="R")
-            self.ln(6)
-            self.cell(160)
+            self.set_xy(160, 20)
             self.set_font("helvetica", "I", 15)
             self.cell(30, 10, properties["ref-library"], align="R")
-            self.ln(20)
+            self.ln(12)
 
         def footer(self):
             """
@@ -287,7 +285,7 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=pdf.margin_bottom_threshold)
         pdf.set_title("Reports of statistics analysis")
-        pdf.set_author("Library X")
+        pdf.set_author("Library StaTDS")
 
     if type(experiments) is not dict:
         raise LibraryError("Error: Data structure not compatible with the expected format. Dictionary is expected. "
@@ -566,5 +564,6 @@ if __name__ == "__main__":
                           "first_group": columns[1], "second_group": columns[-1]},
                          {"alpha": 0.05, "test": "ANOVA between cases", "criterion": True},
                          {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Bonferroni"},
-                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Nemenyi"}])
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Nemenyi"}
+                         ])
     analysis_of_experiments(df, aux, generate_pdf=True)

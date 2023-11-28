@@ -177,3 +177,17 @@
   justify-content: center; /* Centra el contenido verticalmente */
   height: 100%; /* Asegúrate de que la tarjeta tenga una altura para que el contenido pueda centrarse dentro de ella */
 }
+
+.button-form{
+    display: block;
+    width: 10em;
+    height: auto;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    justify-content: center; /* Centra el contenido verticalmente */
+}
+
+.center {
+    display: inline;
+    margin-top: 0.5em;
+}

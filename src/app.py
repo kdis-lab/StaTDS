@@ -10,13 +10,14 @@ import base64
 from datetime import datetime
 
 import multiprocessing
+from pathlib import Path
 
 # TODO Check imports
 
 import no_parametrics, parametrics, utils
 import normality, homoscedasticity
 
-
+current_directory = Path(__file__).resolve().parent
 external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css"]
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 app.title = 'StaTDS: Statistical Tests for Data Science'
@@ -24,7 +25,7 @@ app.title = 'StaTDS: Statistical Tests for Data Science'
 # suppress_callback_exceptions=True Esto no es una buena práctica pero es la única forma de mantener el control dinámico
 
 
-with open("assets/app/README.md", 'r') as film:
+with open(current_directory / "assets/app/README.md", 'r') as film:
     readme_content = film.read()
 
 
@@ -44,7 +45,7 @@ bibtext_content = '''
 
 
 def generate_text_sample():
-    with open("assets/app/sample_dataset.csv", "r") as f:
+    with open(current_directory / "assets/app/sample_dataset.csv", "r") as f:
         text = f.read()
     return text
 
@@ -54,7 +55,7 @@ def generate_navigator_menu():
                 {"title": html.Img(src="assets/images/logo-StaTDS-without-background.png", style={"width": "4.5em",
                                                                                                   "height": "4.5em"}),
                  "href": "home", "icon": "mdi:home-outline", "className": "logo-menu"},
-                {"title": html.Img(src="assets/images/logo-kdislab.png", style={"width": "4em", "height": "1.5em"}),
+                {"title": html.Img(src="assets/images/logo-kdislab.png", style={"width": "1em", "height": "1.5em"}),
                  "href": "https://www.uco.es/kdis/", "icon": "mdi:home-outline", "className": "logo-kdis-menu"},
               ]
     menus = [
@@ -364,11 +365,6 @@ def generate_alpha_form(multiple_alpha: bool = False, switch_selector: bool = Tr
                         value=str(available_alpha[1]), style={'width': 'auto', "min-width": "8em", "max-width": "16em"},
                         id="selector_alpha", multi=multiple_alpha)]),
             html.Div([
-                html.Label('Generate Reports'),
-                daq.BooleanSwitch(id='reports_switch', on=False),
-                
-            ], className="slider-content"),
-            html.Div([
                 html.Label('Optimization Criterion'),
                 html.Div([
                         html.Label('Min', style={"margin-right": "0.95em", "margin-left": "0.95em"}),
@@ -450,8 +446,8 @@ def left_block_test(title: str, test_two_groups: list, test_multiple_groups: lis
     return html.Div([
         create_norm_form(title, test_two_groups, test_multiple_groups, multi_alpha),
         html.Div([
-            html.Button('Send', id='submit-norm'),
-            html.Button('Reset', id='reset-norm')
+            html.Button('Generate Results', id='submit-norm', className="button-form"),
+            html.Button('Clear Results', id='reset-norm', className="button-form")
         ], className='form-element')
     ], className='left-block')
 
@@ -464,17 +460,15 @@ def left_block_experiments(columns: list, title: str, test_two_groups: list, tes
 
     return html.Div([
         create_test_form(columns, title, test_two_groups, test_multiple_groups, test_post_hoc, multi_alpha),
-        html.Div([
-            html.Button('Add Experiment', id='add-experiment'),
-            html.Div([html.Button('Send', id='process-experiment'),
-                      html.Button('Reset', id='reset-experiment', style={"margin-left": "0.5em"})])
-        ], className='form-element'),
+        html.Button('Add Experiment', id='add-experiment', className="button-form center"),
         html.Div([
             html.H3('List of Experiments'),
             html.Div(generate_tabla_experiment(table, height_table="15em"), id="table-experiments"),
             html.Div([
-                html.Button("Remove Seleted Experiments", id="remove-experiment"),
-                html.Button("Remove All Experiments", id="remove-all-experiment")
+                html.Div([html.Button("Remove Selected", id="remove-experiment", className="button-form"),
+                          html.Button("Remove All", id="remove-all-experiment", className="button-form")]),
+                html.Div([html.Button('Generate Results', id='process-experiment', className="button-form"),
+                          html.Button('Clear Results', id='reset-experiment', className="button-form")])
             ], className='form-element'),
         ])
     ], className='left-block')
@@ -811,9 +805,6 @@ def generate_analysis(test_selected: dict):
     result_multiple_groups = results_multiple_groups(test_selected["data"], test_selected["multiple_groups"],
                                                      test_selected["alpha"])
     content = [result_two_groups, result_multiple_groups[0]]
-    """if test_selected["inform"] is True:
-        content.extend([html.Button("Download Text", id="btn-download-txt"),
-                        ])"""
 
     return html.Div(content)
 
@@ -862,18 +853,17 @@ def generate_inform(dataset, experiments: dict, generate_pdf: bool = False, name
               Output('results_experiments', 'className'),
               Output("reset-experiment", "n_clicks"),
               Output("modal-export", "children"),
-              Output("download-text", "data"),
+              Output("user-file", "data"),
               Input("process-experiment", "n_clicks"),
               Input("reset-experiment", "n_clicks"),
-              State('reports_switch', 'on'),
               State('user-experiments', 'data'),
               State('user-data', 'data'))
-def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_session):
+def process_experiment(n_clicks, reset, user_experiments, current_session):
     if n_clicks is None and reset is None:
         return dash.no_update
 
     name_file_pdf = ""
-
+    generate_pdf = True
     if reset:
         return html.Div(""), "", None, dbc.ModalHeader(dbc.ModalTitle("Export Results")), name_file_pdf
 
@@ -903,7 +893,7 @@ def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_
         process.start()
         process.join()
 
-    content = []
+    content = [html.Button("Download Report", id="btn-download-txt", className="button-form center")]
     content_exportable = [dbc.ModalHeader(dbc.ModalTitle("Export Results"))]
     for name_experiment in experiments.keys():
         info_experiment = experiments[name_experiment]
@@ -938,13 +928,11 @@ def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_
 
         content.extend([html.H3(f"Experiment {name_experiment} : {type_test}", className="title")])
         content.extend(alpha_results)
+        content.extend(html.Hr())
 
-    if generate_pdf is True:
-        content.extend([html.Button("Download Text", id="btn-download-txt"),
-                        dcc.Download(id="download-text")])
+    print(name_file_pdf)
 
-    send_file = None if name_file_pdf == "" else dcc.send_file(name_file_pdf)
-    return html.Div(content), "", None, html.Div(content_exportable), send_file
+    return html.Div(content), "", None, html.Div(content_exportable), name_file_pdf
 
 
 def get_letter_experiment(index):
@@ -1117,12 +1105,11 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
               Output("reset-norm", "n_clicks"),
               Input("submit-norm", "n_clicks"),
               Input("reset-norm", "n_clicks"),
-              State('reports_switch', 'on'),
               State('selector_alpha', 'value'),
               State('selector_normality', 'value'),
               State('selector_homoscedasticity', 'value'),
               State('user-data', 'data'))
-def process_normality(n_clicks, reset, generate_pdf, alpha, test_normality, test_homoscedasticity, current_data):
+def process_normality(n_clicks, reset, alpha, test_normality, test_homoscedasticity, current_data):
     if n_clicks is None and reset is None:
         return dash.no_update
     if reset:
@@ -1143,6 +1130,23 @@ def toggle_collapse(n, is_open):
     if n:
         return not is_open
     return is_open
+
+
+@app.callback(
+    Output("download-text", "data"),
+    Input("btn-download-txt", "n_clicks"),
+    State("user-file", "data")
+)
+def download_report(n_clicks, name_file):
+    if n_clicks is None:
+        return dash.no_update
+    print("HOLA")
+    print(name_file)
+    return dcc.send_file(name_file)
+
+
+def start_app(host: str = '127.0.0.1', port: int = 8050):
+    app.run(debug=True, port=port, host=host)
 
 
 if __name__ == '__main__':
