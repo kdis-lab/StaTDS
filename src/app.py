@@ -158,7 +158,7 @@ def generate_export_table_page():
 def generate_tabla_of_dataframe(df: pd.DataFrame, height_table: str = '30em'):
     if df is None or df.empty:
         return ""
-
+    height_table = "7.5em" if df.shape[0] == 1 else "14em" if df.shape[0] < 5 else '30em'
     return dag.AgGrid(
         id="table",
         rowData=df.to_dict("records"),
@@ -166,8 +166,8 @@ def generate_tabla_of_dataframe(df: pd.DataFrame, height_table: str = '30em'):
             {'headerName': col, 'field': col} for col in df.columns
         ],
         defaultColDef={"resizable": True, "filter": False, "minWidth": 150, "floatingFilter": False},
-        columnSize="sizeToFit",
-        style={'height': height_table}
+        columnSize="responsiveSizeToFit",
+        style={'height': height_table, "margin-bottom": "1em"}
     )
 
 
@@ -185,15 +185,10 @@ def generate_home_page(dataframe: pd.DataFrame):
                         "CREO]* at the University of Córdoba.",
          "email": "amoya@uco.es", "image": "assets/images/amoya.png"},
         {"title": "José María Luna Ariza",
-         "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of "
-                        "Córdoba. José M. Luna graduated in Computer Science with honors from the University of "
-                        "Córdoba (Spain) in 2009, received his MSc from the University of Granada in 2011, "
-                        "and completed his PhD with the highest distinction in 2014. His PhD, funded by the Spanish "
-                        "Ministry of Education, focused on association rule extraction and included a research stint "
-                        "with Prof. Mykola Pechenizkiy at TU/e. Currently, he holds a JdC PostDoc grant from the "
-                        "Spanish Ministry of Economy and Competitiveness, is the author of 'Pattern Mining with "
-                        "Evolutionary Algorithms', and has published over 30 papers. His research specializes in "
-                        "pattern mining, particularly in patterns in flexible data.",
+         "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of Córdoba,"
+                        " while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. Is "
+                        "the author of ‘Pattern Mining with Evolutionary Algorithms’ His research specializes in patern"
+                        " mining, particularly in patterns in flexible data.",
          "email": "jmluna@uco.es", "image": "assets/images/jmluna.png"},
         {"title": "Sebastián Ventura Soto",
          "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of "
@@ -209,7 +204,7 @@ def generate_home_page(dataframe: pd.DataFrame):
         dbc.Col(dbc.CardBody(
             [html.H4(author["title"], className="card-title"),
              html.P(author["description"], className="card-text"),
-             html.Small(author["email"], className="card-text text-muted")]
+             html.Small(html.A(author["email"], href="mailto:" + author["email"]), className="card-text text-muted")]
         ), className="col-md-8"
         )
     ], className="g-0 d-flex align-items-center")
@@ -235,14 +230,14 @@ def generate_home_page(dataframe: pd.DataFrame):
                 ),
                 className="content-info",
             ),
-            # TODO Cambiar la forma que se ven los botones
+
             html.Div([
                 dbc.ButtonGroup([
                     dbc.Button([html.Img(src='assets/images/logo-send-email.png', className="icon_button"),
-                                "Contact email"], href="mailto:i82luesc@uco.es?Subject=[StaTDS]", className="button",
-                               color="secondary", outline=True),
+                                "Contact email"], href="mailto:i82luesc@uco.es?cc=sventura@uco.es&subject=StaTDS",
+                               className="button", color="secondary", outline=True),
                     dbc.Button([html.Img(src='assets/images/logo-github.png', className="icon_button"),
-                                "Source on Gitlab"], href="https://github.com/kdis-lab/statistical_lib",
+                                "Source on Github"], href="https://github.com/kdis-lab/statistical_lib",
                                className="button", color="secondary", outline=True),
                     dbc.Button([html.Img(src='assets/images/logo-python.png', className="icon_button"),
                                 "Python Doc"], href="https://github.com/kdis-lab/statistical_lib", className="button",
@@ -598,12 +593,18 @@ def results_two_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
     statistic, critical_value, p_value, hypothesis = test_function(selected_data, alpha)
     if p_value is None:
-        result = f"Statistic: {statistic} Critical Value: {critical_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "Critical Value": [critical_value],
+                                     "Result": [hypothesis]})
     else:
-        result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "P-value": [p_value], "Result": [hypothesis]})
+
+    caption = f"Results {columns[0]} test (significance level of {alpha})"
+    result, test_result_exportable = generate_table_and_textarea(data_results, "7em", caption)
+    # TODO FALTA PONER LA PARTE DE EXPORTA
     title = html.H3(f"Two Groups to {columns[1]} vs {columns[2]}", className="title")
     subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
-    return html.Div([title, subtitle, result])
+    content_to_export = [subtitle, test_result_exportable]
+    return html.Div([title, subtitle, result]), html.Div(content_to_export)
 
 
 def prueba_paralelizada(args, queue):
@@ -705,7 +706,7 @@ def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: flo
 def generate_table_and_textarea(table_data, height, caption_text, id_val="textarea-dataset"):
     table = generate_tabla_of_dataframe(table_data, height_table=height)
     text_table = utils.dataframe_to_latex(table_data, caption=caption_text)
-    textarea = dbc.Textarea(id=id_val, size="lg", value=text_table, style={'height': '200px'})
+    textarea = dbc.Textarea(id=id_val, size="lg", value=text_table, style={'height': '200px', "margin-bottom":"0.5em"})
     return table, textarea
 
 
@@ -735,13 +736,17 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     table_results, statistic, p_value, critical_value, hypothesis = test_function(**parameters_to_function)
 
     if p_value is None:
-        test_result = f"Statistic: {statistic} Critical Value: {critical_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "Critical Value": [critical_value],
+                                     "Result": [hypothesis]})
     else:
-        test_result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "P-value": [p_value], "Result": [hypothesis]})
+
+    caption = f"Results {columns[0]} test (significance level of {alpha})"
+    test_result, test_result_exportable = generate_table_and_textarea(data_results, "7em", caption)
     test_subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
     title = html.H3(f"Multiple Groups", className="title")
     content = [title, test_subtitle, test_result]
-    content_to_export = [test_subtitle]
+    content_to_export = [test_subtitle, test_result_exportable]
     if type(table_results) is list:
         tab_1, tab_1_exportable = generate_table_and_textarea(table_results[0], "14em", "Data Summary")
         caption_2 = f"Summary {columns[0]} test (significance level of {alpha})"
@@ -825,11 +830,13 @@ def generate_analysis(test_selected: dict):
 
 
 def create_data_table(names_exp, parameters_exp):
-    table = {"Name Experiment": [], "Alpha": [], "Test": []}
+    table = {"Name Experiment": [], "Alpha": [], "Test": [], "Criterion": []}
     for index, value in enumerate(zip(names_exp, parameters_exp)):
         experiment, parameter = value
         table["Name Experiment"].append(experiment)
         table["Alpha"].append(parameter["alpha"])
+        criterion = "" if "criterion" not in parameter.keys() else "Maximize" if parameter["criterion"] else "Minimize"
+        table["Criterion"].append(criterion)
         if "post_hoc" in parameter.keys():
             # test = [parameter["test"], parameter["post_hoc"]]
             test = f"{parameter['test']}"
@@ -853,8 +860,8 @@ def generate_tabla_experiment(df: pd.DataFrame, height_table: str = '30em'):
         columnDefs=[
             {'headerName': col, 'field': col} for col in df.columns
         ],
-        defaultColDef={"resizable": True, "filter": False, "minWidth": 150, "floatingFilter": False},
-        columnSize="sizeToFit",
+        defaultColDef={"resizable": True, "filter": False, "minWidth": 100, "floatingFilter": False},
+        columnSize="responsiveSizeToFit",
         style={'height': height_table},
         dashGridOptions={"rowSelection": "multiple", "rowMultiSelectWithClick": True},
     )
@@ -924,6 +931,14 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
                 alpha_results = [results_two_groups(df, test_selected, i) for i in info_experiment["alpha"]]
             else:
                 alpha_results = [results_two_groups(df, test_selected, info_experiment["alpha"])]
+
+            alpha_results, table_results = zip(*alpha_results)
+
+            table_results = (html.H3(f"Experiment {name_experiment} : {type_test}",
+                                     className="title"),) + table_results
+            table_results += (dbc.Textarea(id="textarea-dataset", size="sm", value="", style={'height': '0',
+                                                                                              'visibility': 'hidden'}),)
+            content_exportable.extend([dbc.ModalBody(table_results)])
         elif info_experiment["test"] in available_test_multiple_groups.keys():
             test_selected = {"test": info_experiment["test"], "post_hoc": info_experiment["post_hoc"],
                              "criterion": info_experiment["criterion"], 
@@ -1159,8 +1174,6 @@ def toggle_collapse(n, is_open):
 def download_report(n_clicks, name_file):
     if n_clicks is None:
         return dash.no_update
-    print("HOLA")
-    print(name_file)
     return dcc.send_file(name_file)
 
 
