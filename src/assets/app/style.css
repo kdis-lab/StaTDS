@@ -37,6 +37,7 @@
 /* Change the link color to #111 (black) on hover */
 .item-menu:hover {
   /*background-color: #111; */
+  color: white;
   background-color: #276E90;
 }
 
@@ -48,15 +49,18 @@
 .logo-kdis-menu {
     display: flex;
     flex-direction: row;
-    margin: 0 10px;
     overflow: hidden;
     text-align: center;
+    /*margin: 0 10px;
     padding: 1.5em 16px;
+    */
     text-decoration: none;
     color: white;
     border-radius: 50%;
     text-decoration-color: red;
     background-color: white;
+    width: 5em;
+    height: 5em;
 }
 
 /* Change the link color to #111 (black) on hover */
@@ -190,4 +194,18 @@
 .center {
     display: inline;
     margin-top: 0.5em;
+}
+
+.accordion-button {
+    font-size: xx-large;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: white;
+    color: black;
+}
+
+.textarea::placeholder{
+    color: #C1BEBE;
+    font-style: italic;
 }
