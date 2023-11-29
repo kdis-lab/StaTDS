@@ -209,3 +209,12 @@
     color: #C1BEBE;
     font-style: italic;
 }
+
+.button-info{
+    background: transparent;
+    padding: 0;
+    display: inline-block;
+    border: none;
+    vertical-align: middle,
+    margin-left: 10em;
+   }

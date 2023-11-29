@@ -18,7 +18,8 @@ import no_parametrics, parametrics, utils
 import normality, homoscedasticity
 
 current_directory = Path(__file__).resolve().parent
-external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css"]
+external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css",
+                        'https://use.fontawesome.com/releases/v5.8.1/css/all.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 app.title = 'StaTDS: Statistical Tests for Data Science'
 # app._favicon = "images/logo-kdislab.png" # TODO Buscar un logo adecuado para la ventana del navegador
@@ -421,16 +422,73 @@ def generate_post_hoc(available_test: list):
 def create_test_form(columns: list, title: str, test_two_groups: list, test_multiple_groups: list,
                      test_post_hoc: list = None, multi_alpha: bool = False):
     class_name_post_hoc = "hidden" if test_post_hoc is None else "form-element"
+
+    info_pairwise_test = html.Div([html.H3("Pairwise Test"),
+                                   html.P(
+                                        "They allow determining if two algorithms have similar behaviour."
+                                        "Comparison of algorithms across several data sets, which allows the analysis"
+                                        " of whether the effectiveness of the algorithms varies "
+                                        "with the specific dataset and if one demonstrates consistently better "
+                                        "performance across different contexts."),
+                                   html.H3("Parametrics Test"),
+                                   html.H5("T-test paired"),
+                                   html.H5("T-test unpaired"),
+                                   html.H3("Non-Parametrics Test"),
+                                   html.H5("Wilcoxon"),
+                                   html.H5("Binomial Sign"),
+                                   html.H5("Mann-Whitney-U"),
+                                   ])
+
+    info_multiple_test = [
+        dbc.PopoverHeader(html.H3("Multiple Comparisons")),
+        dbc.PopoverBody([html.P(
+                                       "It allows determining if various algorithms behave similarly across "
+                                       "multiple data sets."),
+                                   html.H3("Parametrics Test"),
+                                   html.H5("ANOVA between cases"),
+                                   html.H5("ANOVA within cases"),
+                                   html.H3("Non-Parametrics Test"),
+                                   html.H5("Friedman"),
+                                   html.H5("Friedman Aligned Ranks"),
+                                   html.H5("Quade"),
+                                   html.H3("Post-hcc"),
+                                   html.P(
+                                       "Once a Multiple Comparisons analysis has been performed, if significant "
+                                       "differences arise after concluding, post-hoc tests are necessary. Post-hoc "
+                                       "tests determine where our differences come from, and it is possible to consider "
+                                       "a comparison among all pairs of algorithms or a comparison between a control "
+                                       "algorithm and the rest."),
+                                   html.H5("Bonferroni-Dunn"),
+                                   html.H5("Holm"),
+                                   html.H5("Holland"),
+                                   html.H5("Finner"),
+                                   html.H5("Hommel"),
+                                   html.H5("Rom"),
+                                   html.H5("Li"),
+                                   html.H5("Nemenyi"),
+                                   html.H5("Shaffer"),],
+            style={"overflow-y": "scroll", "height": "30em"}  # Ajusta la altura según necesites
+        ),
+    ]
+
     return html.Div([
         html.H3(title),
         html.Div(generate_alpha_form(multi_alpha), className="form-element"),
-        html.H5('Two Groups'),
+        html.Div([html.H5('Two Groups', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_pairwise_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_pairwise_test, target="info_pairwise_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_two_groups, "selector_two_groups"), className="form-element"),
         html.Div(generate_select_groups(columns, "select_group_1", "First Group"),
                  className="form-element"),
         html.Div(generate_select_groups(columns, "select_group_2", "Second Group"),
                  className="form-element"),
-        html.H5('Multiple Groups'),
+        html.Div([html.H5('Multiple Groups', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_multiple_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_multiple_test, target="info_multiple_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_multiple_groups, "selector_multiple_groups"),
                  className="form-element"),
         html.Div(generate_post_hoc(test_post_hoc), className=class_name_post_hoc),
@@ -440,12 +498,39 @@ def create_test_form(columns: list, title: str, test_two_groups: list, test_mult
 
 
 def create_norm_form(title: str, test_two_groups: list, test_multiple_groups: list, multi_alpha: bool = False):
+    info_normality_test = html.Div([html.H3("Normality Test"),
+                                    html.P("Data normality suggests that it adheres to a Gaussian (normal) distribution,"
+                                           " as represented by its probability density function in Equation "),
+                                    dcc.Markdown('''
+                                    $$ 
+                                     f(x) = \\frac{1}{\\sigma \\sqrt{2\\pi}} e^{-\\frac{1}{2}(\\frac{x - \\mu}{\\sigma})^2} 
+                                    $$
+                                    ''', mathjax=True),
+                                    html.H5("Shapiro-Wilk"),
+                                    html.H5("D’Agostino-Pearson / Omnibus Tets"),
+                                    html.H5("Kolmogorov-Smirnov"),
+                                    ],
+                                   )
+    info_homoscedasticity_test = html.Div([html.H3("Homoscedasticity Test"),
+                                    html.P("Homoscedasticity refers to the assumption that the variances across the data "
+                                           "are equal or 'homogeneous', an essential consideration in parametrics tests."),
+                                    html.H5("Levene"),
+                                    html.H5("Bartlett"),
+                                    ])
     return html.Div([
         html.H3(title),
         html.Div(generate_alpha_form(multi_alpha, switch_selector=False), className="form-element"),
-        html.H5('Normality'),
+        html.Div([html.H5('Normality', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_normality_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_normality_test, target="info_normality_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_two_groups, "selector_normality"), className="form-element"),
-        html.H5('Homoscedasticity'),
+        html.Div([html.H5('Homoscedasticity', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_homoscedasticity_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_homoscedasticity_test, target="info_homoscedasticity_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_multiple_groups, "selector_homoscedasticity"),
                  className="form-element"),
     ])
@@ -625,84 +710,6 @@ def prueba_paralelizada(args, queue):
     queue.put(object_result)
 
 
-def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: float):
-    # TODO Cambiar esto cuando este el anova mejorado:
-
-    def anova_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_test(dataset, alpha_value)
-        return pd.DataFrame(),  s, p, c, h
-
-    def anova_within_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_within_cases_test(dataset, alpha_value)
-        return pd.DataFrame(),  s, p, c, h
-
-    columns = list(parameters.values())
-    # Se genera mediante la librería
-    if columns[0] is None:
-        return
-
-    available_test = {"Friedman": no_parametrics.friedman,
-                      "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
-                      "Quade": no_parametrics.quade,
-                      "ANOVA between cases": anova_cases,
-                      "ANOVA within cases": anova_within_cases
-                      }
-
-    test_function = available_test[columns[0]]
-
-    rankings_with_label, statistic, p_value, critical_value, hypothesis = test_function(data, alpha)
-    test_result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
-    test_subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
-    title = html.H3(f"Multiple Groups", className="title")
-
-    rankings = pd.DataFrame({i[0]: [round(i[1], 5)] for i in rankings_with_label.items()})
-    table = generate_tabla_of_dataframe(rankings, height_table="7.2em")
-    content = [title, test_subtitle, test_result, table]
-    if not (columns[1] is None):
-        available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
-                              "Bonferroni": no_parametrics.bonferroni,
-                              "Li": no_parametrics.li,
-                              "Holm": no_parametrics.holm,
-                              "Holland": no_parametrics.holland,
-                              "Finner": no_parametrics.finner,
-                              "Hochberg": no_parametrics.hochberg,
-                              "Hommel": no_parametrics.hommel,
-                              "Rom": no_parametrics.rom,
-                              "Schaffer": no_parametrics.shaffer
-                              }
-        post_hoc_function = available_post_hoc[columns[1]]
-
-        parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": False, "verbose": False, "name_fig": "",
-                                  "all_vs_all": True, "control": None}
-        args_functions = inspect.signature(post_hoc_function)
-        args = {name: parameter.default for name, parameter in args_functions.parameters.items()
-                if name not in ["self", "kwargs", "args"]}
-
-        parameters_to_function = {i: parameters_to_function[i] for i in args.keys()}
-
-        result_queue = multiprocessing.Queue()
-        process = multiprocessing.Process(target=prueba_paralelizada, args=([post_hoc_function, parameters_to_function],
-                                                                            result_queue))
-        process.start()
-        process.join()
-        results = result_queue.get()
-        if type(results[0]) is dict:
-            post_hoc_result = [generate_tabla_of_dataframe(pd.DataFrame(results[0]))]
-            post_hoc_result.extend([html.Img(src=results[-1], width="50%", height="50%")])
-            post_hoc_result = html.Div(post_hoc_result)
-        else:
-            post_hoc_result = html.Img(src=results[-1], width="100%", height="100%")
-        text_post_hoc = f"Post hoc: {columns[1]} test (significance level of {alpha})"
-        if columns[1] == "Nemenyi" and alpha in ["0.025", "0.005", "0.001"]:
-            text_post_hoc = text_post_hoc[:-1] + "approximate results)"
-        
-        post_hoc_subtitle = html.H5(text_post_hoc,
-                                    style={"margin-top": "0.5em"})
-        content.extend([post_hoc_subtitle, post_hoc_result])
-    return html.Div(children=content)
-
-
 def generate_table_and_textarea(table_data, height, caption_text, id_val="textarea-dataset"):
     table = generate_tabla_of_dataframe(table_data, height_table=height)
     text_table = utils.dataframe_to_latex(table_data, caption=caption_text)
@@ -818,15 +825,6 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         content.extend([post_hoc_subtitle, post_hoc_result])
 
     return [html.Div(children=content), html.Div(content_to_export)]
-
-
-def generate_analysis(test_selected: dict):
-    result_two_groups = results_two_groups(test_selected["data"], test_selected["two_groups"], test_selected["alpha"])
-    result_multiple_groups = results_multiple_groups(test_selected["data"], test_selected["multiple_groups"],
-                                                     test_selected["alpha"])
-    content = [result_two_groups, result_multiple_groups[0]]
-
-    return html.Div(content)
 
 
 def create_data_table(names_exp, parameters_exp):
