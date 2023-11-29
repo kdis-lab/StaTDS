@@ -217,4 +217,8 @@
     border: none;
     vertical-align: middle,
     margin-left: 10em;
-   }
+}
+
+.popover {
+    max-width: 40em;
+}
