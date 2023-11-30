@@ -520,204 +520,222 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
 
 
 # Nemenyi
-def graph_ranks(avg_ranks, names, cd=None, lowv=None, highv=None, width: float = 6.0, textspace: float = 1.0,
-                reverse: bool = False):
-    # TODO Se deberá de depurar esta función para la generación del gráfico
-    width = float(width)
-    textspace = float(textspace)
-
-    def nth(elements, index):
-        index = lloc(elements, index)
-        return [a[index] for a in elements]
-
-    def lloc(elements, index):
-
-        if index < 0:
-            return len(elements[0]) + index
-        else:
-            return index
-
-    def mxrange(lr):
-
-        if not len(lr):
-            yield ()
-        else:
-            index = lr[0]
-            if isinstance(index, int):
-                index = [index]
-            for a in range(*index):
-                for b in mxrange(lr[1:]):
-                    yield tuple([a] + list(b))
-
-    average_ranks_copy = avg_ranks
-
-    rankings_sort = sorted([(a, i) for i, a in enumerate(average_ranks_copy)], reverse=reverse)
-    subset_rankings = nth(rankings_sort, 0)
-    sorted_ids = nth(rankings_sort, 1)
-
-    names_ids = [names[x] for x in sorted_ids]
-
-    if lowv is None:
-        lowv = min(1, int(math.floor(min(subset_rankings))))
-    if highv is None:
-        highv = max(len(avg_ranks), int(math.ceil(max(subset_rankings))))
-
-    # print(rankings_sort)
-    cline = 0.4
-
-    k = len(average_ranks_copy)
-
-    lines = None
-
-    linesblank = 0
-    scalewidth = width - 2 * textspace
-
-    def rankpos(rank):
-        if not reverse:
-            a = rank - lowv
-        else:
-            a = highv - rank
-        return textspace + scalewidth / (highv - lowv) * a
-
-    distanceh = 0.25
-
-    if cd:
-        # get pairs of non significant methods
-
-        def get_lines(sums, hsd):
-            # get all pairs
-            lsums = len(sums)
-            allpairs = [(i, j) for i, j in mxrange([[lsums], [lsums]]) if j > i]
-            # remove not significant
-            not_significant = [(i, j) for i, j in allpairs if abs(sums[i] - sums[j]) <= hsd]
-
-            # keep only longest
-
-            def no_longer(ij_tuple, not_significant_pairs):
-                i, j = ij_tuple
-                for i1, j1 in not_significant_pairs:
-                    if (i1 <= i and j1 > j) or (i1 < i and j1 >= j):
-                        return False
-                return True
-
-            longest = [(i, j) for i, j in not_significant if no_longer((i, j), not_significant)]
-
-            return longest
-
-        lines = get_lines(subset_rankings, cd)
-        linesblank = 0.2 + 0.2 + (len(lines) - 1) * 0.1
-
-        # add scale
-        distanceh = 0.25
-        cline += distanceh
-
-    # calculate height needed height of an image
-    minnotsignificant = max(2 * 0.2, linesblank)
-    height = cline + ((k + 1) / 2) * 0.2 + minnotsignificant
-
-    fig = plt.figure(figsize=(width+5, height))
-    fig.set_facecolor('white')
-    ax = fig.add_axes([0, 0, 1, 1])  # reverse y axis
-    ax.set_axis_off()
-
-    height_factor = 1. / height  # height factor
-    width_factor = 1. / width
-
-    def hfl(elements):
-        return [a * height_factor for a in elements]
-
-    def wfl(elements):
-        return [a * width_factor for a in elements]
-
-    # Upper left corner is (0,0).
-    ax.plot([0, 1], [0, 1], alpha=0)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(1, 0)
-
-    def line(points_to_draw, color='k', **kwargs):
-        """
-        Input is a list of pairs of points.
-        """
-        ax.plot(wfl(nth(points_to_draw, 0)), hfl(nth(points_to_draw, 1)), color=color, **kwargs)
-
-    def text(x, y, s, *args, **kwargs):
-        ax.text(width_factor * x, height_factor * y, s, *args, **kwargs)
-
-    line([(textspace, cline), (width - textspace, cline)], linewidth=0.7)
-
-    bigtick = 0.1
-    smalltick = 0.05
-
-    tick = None
-    for a in list(np.arange(lowv, highv, 0.5)) + [highv]:
-        tick = smalltick
-        if a == int(a):
-            tick = bigtick
-        line([(rankpos(a), cline - tick / 2),
-              (rankpos(a), cline)],
-             linewidth=0.7)
-
-    for a in range(lowv, highv + 1):
-        text(rankpos(a), cline - tick / 2 - 0.05, str(a),
-             ha="center", va="bottom")
-
-    k = len(subset_rankings)
-
-    for i in range(math.ceil(k / 2)):
-        chei = cline + minnotsignificant + i * 0.2
-        line([(rankpos(subset_rankings[i]), cline),
-              (rankpos(subset_rankings[i]), chei),
-              (textspace - 0.1, chei)],
-             linewidth=0.7)
-        text(textspace - 0.2, chei, f"{names_ids[i]} ({round(rankings_sort[i][0], 4)})", ha="right", va="center")
-
-    for i in range(math.ceil(k / 2), k):
-        chei = cline + minnotsignificant + (k - i - 1) * 0.2
-        line([(rankpos(subset_rankings[i]), cline),
-              (rankpos(subset_rankings[i]), chei),
-              (textspace + scalewidth + 0.1, chei)],
-             linewidth=0.7)
-        text(textspace + scalewidth + 0.2, chei, f"{names_ids[i]} ({round(rankings_sort[i][0], 4)})",
-             ha="left", va="center")
-
-    if cd:
-        # upper scale
-        if not reverse:
-            begin, end = rankpos(lowv), rankpos(lowv + cd)
-        else:
-            begin, end = rankpos(highv), rankpos(highv - cd)
-
-        line([(begin, distanceh), (end, distanceh)], linewidth=0.7)
-        line([(begin, distanceh + bigtick / 2),
-              (begin, distanceh - bigtick / 2)],
-             linewidth=0.7)
-        line([(end, distanceh + bigtick / 2),
-              (end, distanceh - bigtick / 2)],
-             linewidth=0.7)
-        text((begin + end) / 2, distanceh - 0.05, f"CD ({round(cd, 4)})",
-             ha="center", va="bottom")
-
-        # no-significance lines
-        def draw_lines_cd(lines_to_draw, side=0.05, height_between=0.1):
-            start = cline + 0.2
-            for left_point, right_point in lines_to_draw:
-                line([(rankpos(subset_rankings[left_point]) - side, start),
-                      (rankpos(subset_rankings[right_point]) + side, start)],
-                     linewidth=2.5)
-                start += height_between
-
-        draw_lines_cd(lines)
-
-    # if name_fig == "":
-    #    plt.show()
-    # else:
-    #    plt.savefig(name_fig)
-
-    return plt.gcf()
-
 
 # -------------------- Post-Hoc Test -------------------- #
 def nemenyi(ranks: dict, num_cases: int, alpha: float = 0.05, verbose: bool = False):
+    """
+    The Nemenyi test is a post-hoc analysis method used in statistics to compare multiple algorithms or treatments.
+    It is often used after a Friedman test has indicated significant differences across algorithms.
+
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+                  ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings
+                      were calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05,
+                  which is a common choice in statistical testing.
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance).
+                    Defaults to False.
+
+    :return: A tuple containing three elements:
+             - The list of rank values for each algorithm.
+             - The critical distance for the Nemenyi test, which is a threshold used to determine if differences
+               between algorithm rankings are statistically significant.
+             - A figure representing the ranking of the algorithms and the critical distances visually,
+               often as a CD diagram.
+
+    Note: The Nemenyi test is non-parametric and is used when the assumptions of parametric tests (like ANOVA)
+    are not met. It's particularly useful in scenarios where multiple algorithms are compared across various datasets.
+    """
+
+    def graph_ranks(avg_ranks, names, cd=None, lowv=None, highv=None, width: float = 6.0, textspace: float = 1.0,
+                    reverse: bool = False):
+        width = float(width)
+        textspace = float(textspace)
+
+        def nth(elements, index):
+            index = lloc(elements, index)
+            return [a[index] for a in elements]
+
+        def lloc(elements, index):
+
+            if index < 0:
+                return len(elements[0]) + index
+            else:
+                return index
+
+        def mxrange(lr):
+
+            if not len(lr):
+                yield ()
+            else:
+                index = lr[0]
+                if isinstance(index, int):
+                    index = [index]
+                for a in range(*index):
+                    for b in mxrange(lr[1:]):
+                        yield tuple([a] + list(b))
+
+        average_ranks_copy = avg_ranks
+
+        rankings_sort = sorted([(a, i) for i, a in enumerate(average_ranks_copy)], reverse=reverse)
+        subset_rankings = nth(rankings_sort, 0)
+        sorted_ids = nth(rankings_sort, 1)
+
+        names_ids = [names[x] for x in sorted_ids]
+
+        if lowv is None:
+            lowv = min(1, int(math.floor(min(subset_rankings))))
+        if highv is None:
+            highv = max(len(avg_ranks), int(math.ceil(max(subset_rankings))))
+
+        # print(rankings_sort)
+        cline = 0.4
+
+        k = len(average_ranks_copy)
+
+        lines = None
+
+        linesblank = 0
+        scalewidth = width - 2 * textspace
+
+        def rankpos(rank):
+            if not reverse:
+                a = rank - lowv
+            else:
+                a = highv - rank
+            return textspace + scalewidth / (highv - lowv) * a
+
+        distanceh = 0.25
+
+        if cd:
+            # get pairs of non significant methods
+
+            def get_lines(sums, hsd):
+                # get all pairs
+                lsums = len(sums)
+                allpairs = [(i, j) for i, j in mxrange([[lsums], [lsums]]) if j > i]
+                # remove not significant
+                not_significant = [(i, j) for i, j in allpairs if abs(sums[i] - sums[j]) <= hsd]
+
+                # keep only longest
+
+                def no_longer(ij_tuple, not_significant_pairs):
+                    i, j = ij_tuple
+                    for i1, j1 in not_significant_pairs:
+                        if (i1 <= i and j1 > j) or (i1 < i and j1 >= j):
+                            return False
+                    return True
+
+                longest = [(i, j) for i, j in not_significant if no_longer((i, j), not_significant)]
+
+                return longest
+
+            lines = get_lines(subset_rankings, cd)
+            linesblank = 0.2 + 0.2 + (len(lines) - 1) * 0.1
+
+            # add scale
+            distanceh = 0.25
+            cline += distanceh
+
+        # calculate height needed height of an image
+        minnotsignificant = max(2 * 0.2, linesblank)
+        height = cline + ((k + 1) / 2) * 0.2 + minnotsignificant
+
+        fig = plt.figure(figsize=(width + 5, height))
+        fig.set_facecolor('white')
+        ax = fig.add_axes([0, 0, 1, 1])  # reverse y axis
+        ax.set_axis_off()
+
+        height_factor = 1. / height  # height factor
+        width_factor = 1. / width
+
+        def hfl(elements):
+            return [a * height_factor for a in elements]
+
+        def wfl(elements):
+            return [a * width_factor for a in elements]
+
+        # Upper left corner is (0,0).
+        ax.plot([0, 1], [0, 1], alpha=0)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(1, 0)
+
+        def line(points_to_draw, color='k', **kwargs):
+            """
+            Input is a list of pairs of points.
+            """
+            ax.plot(wfl(nth(points_to_draw, 0)), hfl(nth(points_to_draw, 1)), color=color, **kwargs)
+
+        def text(x, y, s, *args, **kwargs):
+            ax.text(width_factor * x, height_factor * y, s, *args, **kwargs)
+
+        line([(textspace, cline), (width - textspace, cline)], linewidth=0.7)
+
+        bigtick = 0.1
+        smalltick = 0.05
+
+        tick = None
+        for a in list(np.arange(lowv, highv, 0.5)) + [highv]:
+            tick = smalltick
+            if a == int(a):
+                tick = bigtick
+            line([(rankpos(a), cline - tick / 2),
+                  (rankpos(a), cline)],
+                 linewidth=0.7)
+
+        for a in range(lowv, highv + 1):
+            text(rankpos(a), cline - tick / 2 - 0.05, str(a),
+                 ha="center", va="bottom")
+
+        k = len(subset_rankings)
+
+        for i in range(math.ceil(k / 2)):
+            chei = cline + minnotsignificant + i * 0.2
+            line([(rankpos(subset_rankings[i]), cline),
+                  (rankpos(subset_rankings[i]), chei),
+                  (textspace - 0.1, chei)],
+                 linewidth=0.7)
+            text(textspace - 0.2, chei, f"{names_ids[i]} ({round(rankings_sort[i][0], 4)})", ha="right", va="center")
+
+        for i in range(math.ceil(k / 2), k):
+            chei = cline + minnotsignificant + (k - i - 1) * 0.2
+            line([(rankpos(subset_rankings[i]), cline),
+                  (rankpos(subset_rankings[i]), chei),
+                  (textspace + scalewidth + 0.1, chei)],
+                 linewidth=0.7)
+            text(textspace + scalewidth + 0.2, chei, f"{names_ids[i]} ({round(rankings_sort[i][0], 4)})",
+                 ha="left", va="center")
+
+        if cd:
+            # upper scale
+            if not reverse:
+                begin, end = rankpos(lowv), rankpos(lowv + cd)
+            else:
+                begin, end = rankpos(highv), rankpos(highv - cd)
+
+            line([(begin, distanceh), (end, distanceh)], linewidth=0.7)
+            line([(begin, distanceh + bigtick / 2),
+                  (begin, distanceh - bigtick / 2)],
+                 linewidth=0.7)
+            line([(end, distanceh + bigtick / 2),
+                  (end, distanceh - bigtick / 2)],
+                 linewidth=0.7)
+            text((begin + end) / 2, distanceh - 0.05, f"CD ({round(cd, 4)})",
+                 ha="center", va="bottom")
+
+            # no-significance lines
+            def draw_lines_cd(lines_to_draw, side=0.05, height_between=0.1):
+                start = cline + 0.2
+                for left_point, right_point in lines_to_draw:
+                    line([(rankpos(subset_rankings[left_point]) - side, start),
+                          (rankpos(subset_rankings[right_point]) + side, start)],
+                         linewidth=2.5)
+                    start += height_between
+
+            draw_lines_cd(lines)
+
+        return plt.gcf()
+
     names_algoriths = list(ranks.keys())
     num_algorithm = len(names_algoriths)
     q_alpha = stats.get_q_alpha_nemenyi(num_algorithm, alpha)
@@ -842,7 +860,30 @@ def create_dataframe_results(comparisons: list, z_statistics: list, p_values: li
 
 def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
                type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function performs the Bonferroni correction for multiple comparisons of algorithms or treatments.
+    The Bonferroni correction is a method to adjust significance levels when multiple statistical tests
+    are conducted simultaneously.
+
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+                  ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
+                      calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
+                  choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
+                    all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
+                    to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: This function is useful in statistical analysis where multiple algorithms or treatments are compared
+    and there is a need to control the Type I error (false positive) that increases with the number of comparisons.
+    """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -876,7 +917,28 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
 
 def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
          type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function implements the Holm-Bonferroni method, an adjustment for multiple comparisons.
+    It is used to control the family-wise error rate when comparing multiple algorithms or treatments.
+    This method is more powerful than the simple Bonferroni correction, especially when the number
+    of comparisons is large.
+
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: The Holm-Bonferroni method adjusts the significance levels of each comparison based on the order of
+    their p-values, providing a less conservative approach than the original Bonferroni correction. It's particularly
+    useful in scenarios with multiple comparisons to control the overall type I error rate.
+    """
+
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -922,7 +984,25 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
 def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
             type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function applies the Holland step-down procedure for controlling the family-wise error rate in multiple comparisons.
+    It's an improvement over the simple Bonferroni method and is particularly useful when dealing with a large number of comparisons.
+    and it is generally more powerful than the Bonferroni correction.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    The Holland method adjusts the alpha values for each comparison based on their rank in p-value, offering a more nuanced control
+    over Type I errors compared to the Bonferroni method. It's particularly effective in scenarios with multiple algorithm comparisons,
+    ensuring a more accurate interpretation of statistical results.
+    """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -970,7 +1050,30 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
 
 def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
            type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function implements the Finner correction, a statistical method for controlling the family-wise error rate
+    in multiple comparisons. The Finner correction is an alternative to other methods like Bonferroni or Holm,
+    and it is generally more powerful than the Bonferroni correction.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+                  ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
+                      calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
+                  choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
+                    all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance).
+                    Defaults to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: The Finner method is particularly useful in scenarios involving multiple comparisons, where it provides
+    a balance between statistical power and control over Type I errors. This makes it a valuable tool in comparative
+    studies of algorithms or treatments across various datasets.
+    """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -1015,7 +1118,25 @@ def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
 
 def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
            type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function implements the Hommel correction, a statistical method for adjusting p-values when
+    performing multiple comparisons. The Hommel correction is a more powerful alternative to the Bonferroni
+    correction, particularly when the number of comparisons is large.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: The Hommel correction is particularly useful in scenarios with multiple comparisons, as it provides a balance
+    between controlling the family-wise error rate and maintaining statistical power. This makes it an effective tool
+    in the comparative analysis of algorithms or treatments across various datasets.
+    """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -1033,10 +1154,6 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     adj_alphas = sorted(adj_alphas, key=lambda x: x[1])
 
     adj_alphas, _ = zip(*adj_alphas)
-
-    # Algorithm that calculates the adjusted p-values for Hommel (ref Fig. 2 )
-    # Art: Advanced nonparametric tests for multiple comparisons in the design of experiments in computational
-    # intelligence and data mining: Experimental analysis of power
     
     length = len(p_values)
     adj_p_values = list(p_values).copy()
@@ -1077,7 +1194,30 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
 
 def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
         type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function implements the Rom method, which is a step-down procedure for adjusting p-values in the context of
+    multiple comparisons. The Rom method is an improvement over the Bonferroni correction, providing a more powerful
+    approach, especially when the number of comparisons is large.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+                  ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
+                      calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
+                  choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
+                    all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
+                    to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: The Rom method is particularly useful in scenarios involving multiple comparisons, as it offers a more
+          accurate control of the family-wise error rate compared to simpler methods like Bonferroni, especially in
+          cases with a large number of algorithms or treatments being compared.
+    """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -1125,7 +1265,27 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
 def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
        type_rank: str = "Friedman", verbose: bool = False):
-    
+    """
+    This function implements the Li method for adjusting p-values in multiple comparisons.
+    The Li method is particularly useful when there is a control algorithm to compare
+    against other algorithms. It adjusts p-values based on the performance of the control
+    algorithm relative to others.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: The Li method is effective in scenarios where a specific algorithm (the control) is of particular
+        interest, and the comparisons are made between this control and other algorithms. It provides a nuanced
+        way to adjust for multiple comparisons by considering the performance of the control algorithm.
+    """
+
     algorithm_names = list(ranks.keys())
     num_algorithm = len(ranks.keys())
     if control is None or control not in ranks.keys():
@@ -1166,6 +1326,31 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 
 def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
              type_rank: str = "Friedman", verbose: bool = False):
+    """
+    This function implements the Hochberg step-up procedure for multiple comparisons correction.
+    It is an alternative to the Bonferroni method and is generally more powerful, especially when
+    there are a large number of comparisons. The Hochberg procedure controls the family-wise error rate
+    more effectively than some other methods.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+                  ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
+                      calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
+                  choice in statistical testing.
+    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
+                    all algorithms are compared against each other.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
+                    to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: The Hochberg procedure is particularly valuable when conducting multiple comparisons in statistical analysis,
+    as it provides a more refined approach to controlling the Type I error rate compared to more conservative methods.
+    """
+
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
@@ -1203,7 +1388,29 @@ def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = No
     return results, figure
 
 
-def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "Friedman"):
+def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "Friedman", verbose: bool = False):
+    """
+    This function applies the Shaffer's multiple comparison procedure, which is a more refined method for adjusting
+    p-values in the context of multiple comparisons. Shaffer's method is an extension of the Bonferroni correction
+    and is generally more powerful, particularly when the number of comparisons is large.
+    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+                  ranks must be obtained based on multiple non-parametrics test.
+    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
+                      calculated.
+    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
+                  choice in statistical testing.
+    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
+                    to False.
+
+    :return: A tuple containing two elements:
+             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note: Shaffer's method is particularly effective in scenarios with multiple comparisons, as it provides a more
+        accurate control of the family-wise error rate compared to simpler methods like Bonferroni, especially
+        when the number of algorithms or treatments being compared is large.
+    """
     def _calculate_independent_tests(num: int):
         if num == 0 or num == 1:
             return {0}
@@ -1238,6 +1445,8 @@ def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "
     results = create_dataframe_results(comparisons, statistic_z, p_values, alphas, adj_p_values, alphas)
 
     control = algorithm_names[0]
+    if verbose:
+        print(results)
 
     figure = generate_graph_p_values(results, control, True)
     return results, figure
