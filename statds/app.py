@@ -256,7 +256,7 @@ def generate_home_page(dataframe: pd.DataFrame):
                         dcc.Markdown(bibtext_content)
                     ]
                 ),
-                className="content-info",
+                className="content-info hidden",
             ),
 
             html.Div([
@@ -1222,7 +1222,7 @@ def download_report(n_clicks, name_file):
 
 
 def start_app(host: str = '127.0.0.1', port: int = 8050):
-    app.run(debug=True, port=port, host=host)
+    app.run(debug=False, port=port, host=host)
 
 
 if __name__ == '__main__':
