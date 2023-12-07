@@ -8,17 +8,17 @@ Currently, the available statistical tests are:
 
 | Name                        | Function                              |
 |-----------------------------|---------------------------------------|
-| Shapiro-Wilk                | parametrics.shapiro_wilk_normality    |
-| D'Agostino-Pearson          | parametrics.d_agostino_pearson        |
-| Kolmogorov-Smirnov          | parametrics.kolmogorov_smirnov        |
+| Shapiro-Wilk                | normality.shapiro_wilk_normality      |
+| D'Agostino-Pearson          | normality.d_agostino_pearson          |
+| Kolmogorov-Smirnov          | normality.kolmogorov_smirnov          |
 
 
 ### **Homoscedasticity**
 
 | Name                        | Function                              |
 |-----------------------------|---------------------------------------|
-| Levene                      | parametrics.levene                    |
-| Bartlett                    | parametrics.bartlett                  |
+| Levene                      | homoscedasticity.levene               |
+| Bartlett                    | homoscedasticity.bartlett             |
 
 
 ### **Parametrics**
@@ -36,7 +36,7 @@ Currently, the available statistical tests are:
 |-----------------------------|---------------------------------------|------------------|
 | Wilcoxon                    | no_parametrics.wilconxon              | Paired           |
 | Binomial Sign               | no_parametrics.binomial               | Paired           |
-| Mann-Whitney U              | no_parametrics.binomial               | Paired           |
+| Mann-Whitney U              | no_parametrics.mannwhitneyu           | Paired           |
 | Friedman                    | no_parametrics.friedman               | Multiple         |
 | Friedman Aligned Ranks      | no_parametrics.friedman_aligned_ranks | Multiple         |
 | Quade                       | no_parametrics.quade                  | Multiple         |
