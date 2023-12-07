@@ -21,38 +21,39 @@ install_requires = [
 
 extras_require = {
     'generate_pdf': [
-        'fpdf2==2.7.5',  # Especifica aquí la librería y la versión requerida
+        'fpdf2==2.7.5',  
     ],
-    'app': [
+    'full-app': [
         'dash==2.13.0',
         'dash_bootstrap_components==1.4.2',
         'dash_daq==0.5.0',
-        'dash_ag_grid==2.3.0'
+        'dash_ag_grid==2.3.0',
+        'fpdf2==2.7.5'
     ]
 }
 
 setup(
     #  Project name.
-    #  $ pip install nameLibrary
-    name='prueba',
+    #  $ pip install statds
+    name='statds',
 
     # Version
-    version='1.0',
+    version='0.1',
 
     # Description
-    description='TO DO',
+    description='Library for statistical testing and comparison of algorithm results',
 
     # Long description (README)
     long_description=long_description,
 
     # URL
-    url='https://github.com/TODO',
+    url='https://github.com/kdis-lab/StaTDS',
 
     # Author
     author='Christian Luna Escudero, Antonio R. Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto',
 
     # Author email
-    author_email='i82luesc@uco.es',
+    author_email='i82luesc@uco.es, sventura@uco.es',
 
     # Keywords
     keywords=['Test Statistical',
@@ -62,12 +63,12 @@ setup(
               'Post-hoc Tests'],
 
     # Packages # Excluimos las carpetas del código que no se usen en la librería
-    package_dir = {"": "src"},
-    packages=find_packages(where="src", exclude=['app', 'docs', 'test', 'examples']),
+    package_dir={"": "./"}, # CUIDADO CON ESTE DIRECTORIO, DEBE DE SER EL DE ANTES
+    packages=find_packages(where="./", exclude=['app', 'docs', 'tests', 'examples', 'src']),
     include_package_data=True,
     package_data={
         '': ['*.txt', '*.rst', '*.csv', '*.png', '*.css'],  # tipos de archivos a incluir en todos los paquetes
-        'prueba': ['assets/**/*'],  # incluye todo en la carpeta assets
+        'statds': ['assets/**/*'],  # incluye todo en la carpeta assets
     },
     # Test suite
     test_suite='test',

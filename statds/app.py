@@ -265,10 +265,10 @@ def generate_home_page(dataframe: pd.DataFrame):
                                 "Contact email"], href="mailto:i82luesc@uco.es?cc=sventura@uco.es&subject=StaTDS",
                                className="button", color="secondary", outline=True),
                     dbc.Button([html.Img(src='assets/images/logo-github.png', className="icon_button"),
-                                "Source on Github"], href="https://github.com/kdis-lab/statistical_lib",
+                                "Source on Github"], href="https://github.com/kdis-lab/StaTDS",
                                className="button", color="secondary", outline=True),
                     dbc.Button([html.Img(src='assets/images/logo-python.png', className="icon_button"),
-                                "Python Doc"], href="https://github.com/kdis-lab/statistical_lib", className="button",
+                                "Python Doc"], href="https://github.com/kdis-lab/StaTDS", className="button",
                                color="secondary", outline=True),
                     ]),
             ], className="p-4"),
@@ -741,7 +741,6 @@ def prueba_paralelizada(args, queue):
 
 
 def generate_table_and_textarea(table_data, height, caption_text, id_val="textarea-dataset"):
-    print("HOLA")
     table = generate_tabla_of_dataframe(table_data, height_table=height)
     text_table = utils.dataframe_to_latex(table_data, caption=caption_text)
     textarea = dbc.Textarea(id=id_val, size="lg", value=text_table, style={'height': '200px', "margin-bottom": "0.5em"})
@@ -924,8 +923,8 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
     available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                                       "Quade": no_parametrics.quade,
-                                      "ANOVA between cases": parametrics.anova_test,
-                                      "ANOVA within cases": parametrics.anova_within_cases_test
+                                      "ANOVA between cases": parametrics.anova_cases,
+                                      "ANOVA within cases": parametrics.anova_within_cases
                                       }
     available_test_two_groups = {"Wilcoxon": no_parametrics.wilconxon,
                                  "Binomial Sign": no_parametrics.binomial,
@@ -1197,10 +1196,8 @@ def process_normality(n_clicks, reset, alpha, test_normality, test_homoscedastic
     dataset = pd.DataFrame(current_data)
     content, content_export = results_normality(dataset, alpha, test_normality, test_homoscedasticity)
     # TODO PENSAR SI MERECE LA PENA PERMITIR GENERAR GRÁFICOS EN LA PARTE DE NORMALIDAD
-    print(content_export)
-    print(type(content_export))
+
     return html.Div(content), "", None, html.Div(content_export)
-    # return html.Div("Hola"), "", None, "hola"
 
 @app.callback(
     Output("collapse", "is_open"),
