@@ -1,9 +1,8 @@
 .navigator_menu {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     background-color: #333;
     white-space: nowrap;
-    align-items: flex-start;
 }
 
 .menu {
@@ -14,7 +13,6 @@
     padding: 0;
     text-decoration: none;
     font-weight: bold;
-    margin-right: auto;
 }
 
 .menu.right {
@@ -41,6 +39,9 @@
   background-color: #276E90;
 }
 
+.left-menu{
+    margin-right: auto;
+}
 
 .logos-menu{
     margin: 0 1em;

@@ -1,35 +1,46 @@
 import numpy as np
 import math
 import pandas as pd
+
 import stats
 
 
 def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
-        Perform a paired t-test. This statistical test is used to compare the means of two related groups of samples,
-        typically before and after a specific treatment or intervention. The test assumes that the differences between
-        pairs are normally distributed.
+    Perform a paired t-test. This statistical test is used to compare the means of two related groups of samples,
+    typically before and after a specific treatment or intervention. The test assumes that the differences between
+    pairs are normally distributed.
 
-        :param dataset: A pandas DataFrame with exactly two columns, each representing a different group/sample.
-                        These groups must be related or paired in some way (e.g., measurements before and after an
-                        intervention).
-        :param alpha: The significance level for the test, default is 0.05.
-        :param verbose: A boolean (True or False). If True, prints the test statistic, rejected value, p-value, and
-                        hypothesis.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different group/sample. These groups must be related 
+        or paired in some way (e.g., measurements before and after an intervention).
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    verbose : bool, optional
+        A boolean indicating whether to print detailed results. If True, prints the test statistic, rejected value, 
+        p-value, and hypothesis. Default is False.
 
-        :return: A tuple containing the following:
-            - statistical_t: The t-test statistic. A higher absolute value indicates a greater difference between the
-              paired groups.
-            - rejected_value: The critical value for the test at the specified alpha level.
-            - p_value: The p-value for the hypothesis test (currently not calculated and set to None).
-            - hypothesis: A string stating the conclusion of the test based on the test statistic and alpha.
-                          It indicates whether the null hypothesis (no difference between means) can be rejected or not.
+    Returns
+    -------
+    statistical_t : float
+        The t-test statistic. A higher absolute value indicates a greater difference between the paired groups.
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic and alpha. It indicates whether the null 
+        hypothesis (no difference between means) can be rejected or not.
 
-        Note: The paired t-test is appropriate for comparing two means from the same group or individual under two
-        different conditions. The test statistic is calculated by dividing the mean difference between paired
-        observations by the standard error of the mean difference. The test is sensitive to the normality assumption of
-        the differences between pairs.
+    Note
+    ----
+    The paired t-test is appropriate for comparing two means from the same group or individual under two different conditions. 
+    The test statistic is calculated by dividing the mean difference between paired observations by the standard error of 
+    the mean difference. The test is sensitive to the normality assumption of the differences between pairs.
     """
+
     if dataset.shape[1] != 2:
         raise "Error: T Test need two samples"
 
@@ -58,28 +69,40 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
 
 def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
-        Perform an unpaired (independent) t-test. This statistical test is used to compare the means of two unrelated
-        groups of samples to determine if there is a statistically significant difference between the two means. It's
-        appropriate when the two groups are independent of each other.
+    Perform an unpaired (independent) t-test. This statistical test is used to compare the means of two unrelated
+    groups of samples to determine if there is a statistically significant difference between the two means. It's
+    appropriate when the two groups are independent of each other.
 
-        :param dataset: A pandas DataFrame with exactly two columns, each representing a different group/sample.
-                        These groups must be independent or unpaired.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param verbose: A boolean (True or False). If True, prints the test statistic, rejected value, p-value, and
-                        hypothesis.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different group/sample. These groups must be 
+        independent or unpaired.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    verbose : bool, optional
+        A boolean indicating whether to print detailed results. If True, prints the test statistic, rejected value, 
+        p-value, and hypothesis. Default is False.
 
-        :return: A tuple containing the following:
-            - statistical_t: The t-test statistic. A higher absolute value indicates a greater difference between the
-                             group means.
-            - rejected_value: The critical value for the test at the specified alpha level.
-            - p_value: The p-value for the hypothesis test (currently not calculated and set to None).
-            - hypothesis: A string stating the conclusion of the test based on the test statistic and alpha.
-                          It indicates whether the null hypothesis (no difference between means) can be rejected or not.
+    Returns
+    -------
+    statistical_t : float
+        The t-test statistic. A higher absolute value indicates a greater difference between the group means.
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic and alpha. It indicates whether the null 
+        hypothesis (no difference between means) can be rejected or not.
 
-        Note: The unpaired t-test assumes that the two groups have equal variances and that the samples are randomly
-        drawn. The test statistic is calculated by taking the difference between the two group means and dividing by the
-        standard error of the mean difference. The test is sensitive to the normality assumption of the sample data.
+    Note
+    ----
+    The unpaired t-test assumes that the two groups have equal variances and that the samples are randomly drawn. 
+    The test statistic is calculated by taking the difference between the two group means and dividing by the standard 
+    error of the mean difference. The test is sensitive to the normality assumption of the sample data.
     """
+
     if dataset.shape[1] != 2:
         raise "Error: T Test need two samples"
 
@@ -110,29 +133,39 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
 
 def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     """
-        Perform an ANOVA (Analysis of Variance) test. This statistical test is used to compare the means of two or more
-        groups to determine if at least one group mean is significantly different from the others. It's commonly used
-        when there are three or more groups.
+    Perform an ANOVA (Analysis of Variance) test. This statistical test is used to compare the means of two or more
+    groups to determine if at least one group mean is significantly different from the others. It's commonly used
+    when there are three or more groups.
 
-        :param dataset: A pandas DataFrame where each column represents a different group/sample. The first column is
-                        ignored.
-        :param alpha: The significance level for the test, default is 0.05.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame where each column represents a different group/sample. The first column is ignored.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
 
-        :return: A tuple containing the following:
-            - summary_results: A pandas DataFrame with a summary of each group's mean, standard deviation, and standard
-                               error.
-            - anova_results: A pandas DataFrame with the ANOVA results, including degrees of freedom, sum of squares,
-                             mean square, F-statistic, and rejected value for between groups and within groups.
-            - statistical_f_anova: The F-statistic for the ANOVA test. A higher value suggests a greater difference
-                                   between group means.
-            - p_value: The p-value for the hypothesis test (currently not calculated and set to None).
-            - rejected_value: The critical value for the test at the specified alpha level.
-            - hypothesis: A string stating the conclusion of the test based on the F-statistic and alpha.
+    Returns
+    -------
+    summary_results : pandas.DataFrame
+        A DataFrame with a summary of each group's mean, standard deviation, and standard error.
+    anova_results : pandas.DataFrame
+        A DataFrame with the ANOVA results, including degrees of freedom, sum of squares, mean square, F-statistic, 
+        and rejected value for between groups and within groups.
+    statistical_f_anova : float
+        The F-statistic for the ANOVA test. A higher value suggests a greater difference between group means.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    hypothesis : str
+        A string stating the conclusion of the test based on the F-statistic and alpha.
 
-        Note: ANOVA tests the null hypothesis that all group means are equal. The test assumes that the groups are
-        sampled from populations with normal distributions and equal variances. The F-statistic is calculated based on
-        the ratio of variance between the groups to the variance within the groups. A significant F-statistic (p-value
-        less than alpha) indicates that at least one group mean is significantly different.
+    Note
+    ----
+    ANOVA tests the null hypothesis that all group means are equal. The test assumes that the groups are
+    sampled from populations with normal distributions and equal variances. The F-statistic is calculated based on
+    the ratio of variance between the groups to the variance within the groups. A significant F-statistic (p-value
+    less than alpha) indicates that at least one group mean is significantly different.
     """
     if dataset.shape[1] < 2:
         raise "Error: Anova Test need at least two samples"
@@ -191,32 +224,42 @@ def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
 
 def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     """
-        Perform a within-subject ANOVA (Analysis of Variance). This type of ANOVA is used when the same subjects are
-        used for each treatment (i.e., the subjects are subjected to repeated measures). This test is beneficial for
-        analyzing the effects of different conditions or treatments on a single group of subjects.
+    Perform a within-subject ANOVA (Analysis of Variance). This type of ANOVA is used when the same subjects are
+    used for each treatment (i.e., the subjects are subjected to repeated measures). This test is beneficial for
+    analyzing the effects of different conditions or treatments on a single group of subjects.
 
-        :param dataset: A pandas DataFrame where each column represents a different condition/treatment for the same
-                        subjects. The first column is typically used for subject identification and is ignored in the
-                        analysis.
-        :param alpha: The significance level for the test, default is 0.05.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame where each column represents a different condition/treatment for the same subjects. The first 
+        column is typically used for subject identification and is ignored in the analysis.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
 
-        :return: A tuple containing the following:
-            - summary_results: A pandas DataFrame with a summary of each group's mean, standard deviation, and standard
-                               error.
-            - anova_results: A pandas DataFrame with the ANOVA results, including degrees of freedom, sum of squares,
-                             mean square, F-statistic, and rejected value for different sources of variance (between
-                             conditions, between subjects, etc.).
-            - statistical_f_anova: The F-statistic for the ANOVA test. A higher value suggests a significant difference
-                                   between conditions or treatments.
-            - p_value: The p-value for the hypothesis test (currently not calculated and set to None).
-            - rejected_value: The critical value for the test at the specified alpha level.
-            - hypothesis: A string stating the conclusion of the test based on the F-statistic and alpha.
+    Returns
+    -------
+    summary_results : pandas.DataFrame
+        A DataFrame with a summary of each group's mean, standard deviation, and standard error.
+    anova_results : pandas.DataFrame
+        A DataFrame with the ANOVA results, including degrees of freedom, sum of squares, mean square, F-statistic, 
+        and rejected value for different sources of variance (between conditions, between subjects, etc.).
+    statistical_f_anova : float
+        The F-statistic for the ANOVA test. A higher value suggests a significant difference between conditions or treatments.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    hypothesis : str
+        A string stating the conclusion of the test based on the F-statistic and alpha.
 
-        Note: Within-subject ANOVA controls for potential variability among subjects, as each subject serves as their
-        own control. This test separates the variance due to the interaction between subjects and conditions from the
-        variance due to differences between conditions and residual variance. It assumes sphericity, which implies that
-        the variances of the differences between all possible pairs of conditions are equal.
+    Note
+    ----
+    Within-subject ANOVA controls for potential variability among subjects, as each subject serves as their own control. 
+    This test separates the variance due to the interaction between subjects and conditions from the variance due to 
+    differences between conditions and residual variance. It assumes sphericity, which implies that the variances of the 
+    differences between all possible pairs of conditions are equal.
     """
+
     if dataset.shape[1] < 2:
         raise "Error: Anova Test need at least two samples"
 
@@ -274,86 +317,3 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     anova_results = pd.DataFrame(anova_results)
      
     return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
-
-# PRUEBAS UNITARIAS DE LAS FUNCIONES QUITAR ESTO DE AQUI MÁS ADELANTE
-
-
-def anova_test(dataset: pd.DataFrame, alpha: float = 0.05):
-    if dataset.shape[1] < 2:
-        raise "Error: Anova Test need at least two samples"
-
-    names_groups = list(dataset.columns)
-    names_groups = names_groups[1:]
-    num_groups = len(names_groups)
-    num_samples = [dataset[i].shape[0] for i in names_groups]
-    num_total = np.sum(num_samples)
-    sum_groups = []
-    sum_square_groups = []
-    for i in names_groups:
-        sum_groups.append(np.sum(dataset[i]))
-        sum_square_groups.append(np.sum(dataset[i] ** 2))
-
-    sum_x_t = sum(sum_groups)
-
-    ss_bg = np.sum([(sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)]) - ((sum_x_t ** 2) / num_total)
-    df_bg = num_groups - 1
-
-    ss_wg = np.sum([sum_square_groups[i] - (sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)])
-    df_wg = num_total - num_groups
-
-    ms_bg = ss_bg / df_bg
-    ms_wg = ss_wg / df_wg
-
-    statistical_f_anova = ms_bg / ms_wg
-
-    rejected_value = stats.get_cv_f_distribution(df_bg, df_wg, alpha=alpha)
-    p_value = stats.get_p_value_f(statistical_f_anova, df_bg, df_wg)
-
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if statistical_f_anova < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-
-    return statistical_f_anova, p_value, rejected_value, hypothesis
-
-
-def anova_within_cases_test(dataset: pd.DataFrame, alpha: float = 0.05):
-    if dataset.shape[1] < 2:
-        raise "Error: Anova Test need at least two samples"
-
-    names_groups = list(dataset.columns)
-    names_groups = names_groups[1:]
-    num_groups = len(names_groups)
-    num_samples = [dataset[i].shape[0] for i in names_groups]
-    num_total = np.sum(num_samples)
-    sum_groups = []
-    sum_square_groups = []
-    for i in names_groups:
-        sum_groups.append(np.sum(dataset[i]))
-        sum_square_groups.append(np.sum(dataset[i] ** 2))
-    sum_s_i = dataset.sum(axis=1)
-    sum_x_t = sum(sum_groups)
-    sum_x_square_t = sum(sum_square_groups)
-
-    ss_bc = np.sum([(sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)]) - ((sum_x_t ** 2) / num_total)
-    df_bc = num_groups - 1
-    ms_bc = ss_bc / df_bc
-
-    # ss_bs = np.sum([i ** 2 / num_groups for i in sum_s_i]) - ((sum_x_t ** 2) / num_total)
-    # df_bs = num_samples[0] - 1
-    # ms_bs = ss_bs / df_bs
-
-    ss_res = sum_x_square_t - np.sum([(sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)]) - np.sum(
-        [i ** 2 / num_groups for i in sum_s_i]) + ((sum_x_t ** 2) / num_total)
-    df_res = (num_samples[0] - 1) * (num_groups - 1)
-    ms_res = ss_res / df_res
-
-    statistical_f_anova = ms_bc / ms_res
-
-    rejected_value = stats.get_cv_f_distribution(df_bc, df_res, alpha=alpha)
-    p_value = stats.get_p_value_f(statistical_f_anova, df_bc, df_res)
-
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if statistical_f_anova < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-
-    return statistical_f_anova, rejected_value, p_value, hypothesis

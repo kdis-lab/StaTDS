@@ -22,7 +22,7 @@ external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css",
                         'https://use.fontawesome.com/releases/v5.8.1/css/all.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 app.title = 'StaTDS: Statistical Tests for Data Science'
-# app._favicon = "images/logo-kdislab.png" # TODO Buscar un logo adecuado para la ventana del navegador
+app._favicon = "images/logo-StaTDS.png" 
 # suppress_callback_exceptions=True Esto no es una buena práctica pero es la única forma de mantener el control dinámico
 
 
@@ -77,7 +77,7 @@ def generate_navigator_menu():
                  for item in menus_2]
 
     download_file = dcc.Download(id="download-text")
-    content = content_2 + content + [import_button, export_button, generate_import_data_page(),
+    content = [html.Div(content_2, className="left-menu")] + content + [import_button, export_button, generate_import_data_page(),
                                      generate_export_table_page(), download_file]
     return html.Div(
         children=content, className="navigator_menu"
@@ -207,8 +207,10 @@ def generate_home_page(dataframe: pd.DataFrame):
                         "while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group.",
          "email": "i82luesc@uco.es", "image": "assets/images/i82luesc.png"},
         {"title": "Antonio Rafael Moya Martín-Castaño",
-         "description": "is a Substitute Professor of [Computing Sciences and Artificial Intelligence| ESTO NO ES "
-                        "CREO]* at the University of Córdoba.",
+         "description": "is currently a Substitute Professor of Computing Sciences and Numerical Analysis at the University " 
+                        "of Córdoba, while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. "
+                        "His research specializes in hyper-parameter Optimization in Machine Learning models, focusing on deep "
+                        "learning models in this task",
          "email": "amoya@uco.es", "image": "assets/images/amoya.png"},
         {"title": "José María Luna Ariza",
          "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of Córdoba,"

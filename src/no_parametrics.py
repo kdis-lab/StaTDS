@@ -2,6 +2,7 @@ import pandas as pd
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+
 import stats
 
 
@@ -13,29 +14,37 @@ class LibraryError(Exception):
 # -------------------- Test Two Groups -------------------- #
 def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
-        Perform the Wilcoxon signed-rank test. This non-parametric test is used to compare two related samples, matched
-        samples, or repeated measurements on a single sample to assess whether their population mean ranks differ. It is
-        an alternative to the paired Student's t-test when the data is not normally distributed.
+    Perform the Wilcoxon signed-rank test. This non-parametric test is used to compare two related samples, matched
+    samples, or repeated measurements on a single sample to assess whether their population mean ranks differ. It is
+    an alternative to the paired Student's t-test when the data is not normally distributed.
 
-        :param dataset: A pandas DataFrame with exactly two columns, each representing a different condition or time
-                        point for the same subjects.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param verbose: A boolean (True or False). If True, prints the detailed results table.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different condition or time point for the same subjects.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    verbose : bool, optional
+        If True, prints the detailed results table.
 
-        :return: A tuple containing the following:
-            - w_wilcoxon: The Wilcoxon test statistic, which is the smallest of the sums of the positive and negative
-                          ranks.
-            - cv_alpha_selected: The critical value for the test at the specified alpha level (only for small sample
-                                 sizes, otherwise None).
-            - p_value: The p-value for the hypothesis test (only for large sample sizes, otherwise None).
-            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, or
-                          p-value and alpha.
+    Returns
+    -------
+    w_wilcoxon : float
+        The Wilcoxon test statistic, which is the smallest of the sums of the positive and negative ranks.
+    cv_alpha_selected : float or None
+        The critical value for the test at the specified alpha level (only for small sample sizes, otherwise None).
+    p_value : float or None
+        The p-value for the hypothesis test (only for large sample sizes, otherwise None).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic, critical value, or p-value and alpha.
 
-        Note: The Wilcoxon signed-rank test makes fewer assumptions than the t-test and is appropriate when the data
-        are not normally distributed. It ranks the absolute differences between pairs, then compares these ranks.
-        The test is sensitive to ties and has different procedures for small and large sample sizes. For large samples,
-        the test statistic is approximately normally distributed, allowing the use of normal approximation for p-value
-        calculation.
+    Note
+    ----
+    The Wilcoxon signed-rank test makes fewer assumptions than the t-test and is appropriate when the data
+    are not normally distributed. It ranks the absolute differences between pairs, then compares these ranks.
+    The test is sensitive to ties and has different procedures for small and large sample sizes. For large samples,
+    the test statistic is approximately normally distributed, allowing the use of normal approximation for p-value
+    calculation.
     """
     if dataset.shape[1] != 2:
         raise "Error: The test only needs two samples"
@@ -125,29 +134,35 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
 
 def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
-        Perform a binomial sign test. This non-parametric test is used to determine if there is a significant difference
-        between the medians of two dependent samples. It's an alternative to the paired t-test and Wilcoxon signed-rank
-        test, particularly useful when the data does not meet the assumptions of these tests or when the data is on an
-        ordinal scale.
+    Perform the Binomial Sign Test. This non-parametric test is used to determine if there is a significant difference between the medians of two dependent samples. 
+    It serves as an alternative to the paired t-test and Wilcoxon signed-rank test, particularly useful when the data does not meet the assumptions of these tests 
+    or when the data is on an ordinal scale.
 
-        :param dataset: A pandas DataFrame with exactly two columns, each representing a different condition or time
-                        point for the same subjects.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param verbose: A boolean (True or False). If True, prints the detailed results table.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different condition or time point for the same subjects.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    verbose : bool, optional
+        If True, prints the detailed results table.
 
-        :return: A tuple containing the following:
-            - statistical_binomial: The binomial test statistic, which is the largest of the counts of positive or
-                                    negative differences.
-            - cv_alpha_selected: The critical value for the test at the specified alpha level (not calculated in this
-                                 function, hence None).
-            - p_value: The p-value for the hypothesis test, calculated from the binomial distribution.
-            - hypothesis: A string stating the conclusion of the test based on the test statistic and p-value in
-                          comparison to alpha.
+    Returns
+    -------
+    statistical_binomial : float
+        The Binomial test statistic, which is the largest of the counts of positive or negative differences.
+    cv_alpha_selected : float or None
+        The critical value for the test at the specified alpha level (not calculated in this function, hence None).
+    p_value : float
+        The p-value for the hypothesis test, calculated from the binomial distribution.
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic and p-value in comparison to alpha.
 
-        Note: The binomial sign test counts the number of positive and negative differences between paired observations
-        and then tests if the observed proportion of positive (or negative) differences is significantly different from
-        0.5 (no difference). The test assumes that the distribution of differences is symmetric around the median and
-        ignores pairs with no difference.
+    Note
+    ----
+    The Binomial Sign Test counts the number of positive and negative differences between paired observations and then tests if the observed proportion of positive 
+    (or negative) differences is significantly different from 0.5 (no difference). The test assumes that the distribution of differences is symmetric around the 
+    median and ignores pairs with no difference.
     """
     if dataset.shape[1] != 2:
         print("Error: The test only needs two samples")
@@ -186,29 +201,33 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
 
 def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
-        Perform the Mann-Whitney U test, also known as the Wilcoxon rank-sum test. This non-parametric test is used to
-        determine whether there is a significant difference between the distributions of two independent samples. It's
-        an alternative to the independent t-test when the data does not meet the assumptions of the t-test.
+    Perform the Mann-Whitney U Test, also known as the Wilcoxon rank-sum test. This non-parametric test is utilized to determine whether there is a significant difference between the distributions of two independent samples. It serves as an alternative to the independent t-test, particularly when the data does not satisfy the assumptions of the t-test.
 
-        :param dataset: A pandas DataFrame with exactly two columns, each representing a different independent sample.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
-                          ascending order; if True, in descending order.
-        :param verbose: A boolean (True or False). If True, prints the detailed results table.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different independent sample.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    criterion : bool, optional
+        Determines the direction for ranking the observations. If False, ranks are in ascending order; if True, in descending order.
+    verbose : bool, optional
+        If True, prints the detailed results table.
 
-        :return: A tuple containing the following:
-            - z_value: The z-value computed from the U statistic.
-            - cv_alpha_selected: The critical value for the test at the specified alpha level (not calculated in this
-                                 function, hence None).
-            - p_value: The p-value for the hypothesis test, calculated from the normal approximation of the U
-                       distribution.
-            - hypothesis: A string stating the conclusion of the test based on the z-value and p-value in comparison to
-                          alpha.
+    Returns
+    -------
+    z_value : float
+        The z-value computed from the U statistic.
+    cv_alpha_selected : float or None
+        The critical value for the test at the specified alpha level (not calculated in this function, hence None).
+    p_value : float
+        The p-value for the hypothesis test, calculated from the normal approximation of the U distribution.
+    hypothesis : str
+        A string stating the conclusion of the test based on the z-value and p-value in comparison to alpha.
 
-        Note: The Mann-Whitney U test ranks all the observations from both groups together and then compares the sum of
-        ranks in each group. It is appropriate for ordinal data and is robust against non-normal distributions. The test
-        assumes that the two groups are independent and that the observations are ordinal or continuous. The normal
-        approximation for the p-value calculation is valid for large sample sizes.
+    Note
+    ----
+    The Mann-Whitney U test ranks all observations from both groups together and then compares the sum of ranks in each group. It is suitable for ordinal data and is robust against non-normal distributions. The test assumes that the two groups are independent and that the observations are ordinal or continuous. The normal approximation for the p-value calculation is valid for large sample sizes.
     """
     if dataset.shape[1] != 2:
         raise "Error: The test only needs two samples"
@@ -261,28 +280,41 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
 # -------------------- Test Multiple Groups -------------------- #
 def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
-        Perform the Friedman test, a non-parametric statistical test similar to the parametric ANOVA, but for
-        repeated measures. The Friedman test is used to detect differences in treatments across multiple test
-        attempts. It ranks the treatments for each block (or subject), then considers these ranks.
+    Perform the Friedman test, a non-parametric statistical test similar to the parametric ANOVA, but for
+    repeated measures. The Friedman test is used to detect differences in treatments across multiple test
+    attempts. It ranks the treatments for each block (or subject), then considers these ranks.
 
-        :param dataset: A pandas DataFrame with the first column as the block or subject identifier and the remaining
-                        columns as different treatments or conditions.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
-                          ascending order; if True, in descending order.
-        :param verbose: A boolean (True or False). If True, prints the detailed results table including ranks.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with the first column as the block or subject identifier and the remaining
+        columns as different treatments or conditions.
+    alpha : float, optional
+        The significance level for the test, default is 0.05.
+    criterion : bool, optional
+        Determines the direction for ranking the observations. If False, ranks are in
+        ascending order; if True, in descending order.
+    verbose : bool, optional
+        If True, prints the detailed results table including ranks.
 
-        :return: A tuple containing the following:
-            - rankings_with_label: A dictionary with the average ranks of each treatment or condition.
-            - stadistic_friedman: The Friedman test statistic, which is chi-squared distributed under the null
-                                  hypothesis.
-            - reject_value: A tuple containing the critical value for the test and the p-value (if applicable).
-            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, and
-                          alpha.
+    Returns
+    -------
+    rankings_with_label : dict
+        A dictionary with the average ranks of each treatment or condition.
+    statistic_friedman : float
+        The Friedman test statistic, which is chi-squared distributed under the null
+        hypothesis.
+    reject_value : tuple
+        A tuple containing the critical value for the test and the p-value (if applicable).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic, critical value, and
+        alpha.
 
-        Note: The Friedman test is appropriate when data is ordinal and the assumptions of parametric tests (like ANOVA)
-        are not met. It considers the ranks of the treatments within each block, summing these ranks, and then analyzing
-        the sums' distribution. The test is robust against non-normal distributions and is ideal for small sample sizes.
+    Note
+    ----
+    The Friedman test is appropriate when data is ordinal and the assumptions of parametric tests (like ANOVA)
+    are not met. It considers the ranks of the treatments within each block, summing these ranks, and then analyzing
+    the sums' distribution. The test is robust against non-normal distributions and is ideal for small sample sizes.
     """
     columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
@@ -334,29 +366,42 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
 
 def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
-        Perform the Friedman Aligned Ranks test, an extension of the Friedman test. This test is used when dealing with
-        multiple treatments or conditions over different subjects or blocks, especially in cases where the assumptions
-        of the classical Friedman test may not hold. The test aligns the data by subtracting the mean across treatments
-        for each subject before ranking.
+    Perform the Friedman Aligned Ranks test, an extension of the Friedman test. This test is used when dealing with
+    multiple treatments or conditions over different subjects or blocks, especially in cases where the assumptions
+    of the classical Friedman test may not hold. The test aligns the data by subtracting the mean across treatments
+    for each subject before ranking.
 
-        :param dataset: A pandas DataFrame with the first column as the block or subject identifier and the remaining
-                        columns as different treatments or conditions.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
-                          ascending order; if True, in descending order.
-        :param verbose: A boolean (True or False). If True, prints the detailed results table including aligned ranks.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with the first column as the block or subject identifier and the remaining
+        columns as different treatments or conditions.
+    alpha : float, optional
+        The significance level for the test, default is 0.05.
+    criterion : bool, optional
+        Determines the direction for ranking the observations. If False, ranks are in
+        ascending order; if True, in descending order.
+    verbose : bool, optional
+        If True, prints the detailed results table including aligned ranks.
 
-        :return: A tuple containing the following:
-            - rankings_with_label: A dictionary with the average ranks of each treatment or condition.
-            - stadistic_friedman: The Friedman Aligned Ranks test statistic.
-            - reject_value: A tuple containing the critical value for the test and the p-value (if applicable).
-            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, and
-                          alpha.
+    Returns
+    -------
+    rankings_with_label : dict
+        A dictionary with the average ranks of each treatment or condition.
+    statistic_friedman : float
+        The Friedman Aligned Ranks test statistic.
+    reject_value : tuple
+        A tuple containing the critical value for the test and the p-value (if applicable).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic, critical value, and
+        alpha.
 
-        Note: The Friedman Aligned Ranks test modifies the standard Friedman test by aligning the data for each subject
-        before ranking. This alignment is achieved by subtracting the average rank across treatments for each subject,
-        making the test more robust to certain types of data irregularities, like outliers. It is appropriate for
-        ordinal data and assumes that the groups are independent and identically distributed within each block.
+    Note
+    ----
+    The Friedman Aligned Ranks test modifies the standard Friedman test by aligning the data for each subject
+    before ranking. This alignment is achieved by subtracting the average rank across treatments for each subject,
+    making the test more robust to certain types of data irregularities, like outliers. It is appropriate for
+    ordinal data and assumes that the groups are independent and identically distributed within each block.
     """
     columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
@@ -425,29 +470,42 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
 
 def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
-        Perform the Quade test, a non-parametric statistical test used to identify significant differences between
-        three or more matched groups. This test is particularly useful for blocked designs where treatments are
-        applied to matched groups or blocks. The Quade test considers the relative differences between treatments
-        within each block and ranks these differences.
+    Perform the Quade test, a non-parametric statistical test used to identify significant differences between
+    three or more matched groups. This test is particularly useful for blocked designs where treatments are
+    applied to matched groups or blocks. The Quade test considers the relative differences between treatments
+    within each block and ranks these differences.
 
-        :param dataset: A pandas DataFrame with the first column as the block or subject identifier and the remaining
-                        columns as different treatments or conditions.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param criterion: A boolean that determines the direction for ranking the observations. If False, ranks are in
-                          ascending order; if True, in descending order.
-        :param verbose: A boolean (True or False). If True, prints the detailed results table including ranks.
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with the first column as the block or subject identifier and the remaining
+        columns as different treatments or conditions.
+    alpha : float, optional
+        The significance level for the test, default is 0.05.
+    criterion : bool, optional
+        Determines the direction for ranking the observations. If False, ranks are in
+        ascending order; if True, in descending order.
+    verbose : bool, optional
+        If True, prints the detailed results table including ranks.
 
-        :return: A tuple containing the following:
-            - rankings_with_label: A dictionary with the average ranks of each treatment or condition.
-            - stadistic_quade: The Quade test statistic.
-            - reject_value: A tuple containing the critical value for the test and the p-value (if applicable).
-            - hypothesis: A string stating the conclusion of the test based on the test statistic, critical value, and
-                          alpha.
+    Returns
+    -------
+    rankings_with_label : dict
+        A dictionary with the average ranks of each treatment or condition.
+    statistic_quade : float
+        The Quade test statistic.
+    reject_value : tuple
+        A tuple containing the critical value for the test and the p-value (if applicable).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic, critical value, and
+        alpha.
 
-        Note: The Quade test adjusts for differences in treatment effects within each block by incorporating the range
-        of each block into the ranking process. This makes it more sensitive to treatment effects in the presence of
-        block-to-block variability. It's appropriate for ordinal data and assumes that the treatments are independent
-        and identically distributed within each block.
+    Note
+    ----
+    The Quade test adjusts for differences in treatment effects within each block by incorporating the range
+    of each block into the ranking process. This makes it more sensitive to treatment effects in the presence of
+    block-to-block variability. It's appropriate for ordinal data and assumes that the treatments are independent
+    and identically distributed within each block.
     """
     columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
@@ -527,23 +585,35 @@ def nemenyi(ranks: dict, num_cases: int, alpha: float = 0.05, verbose: bool = Fa
     The Nemenyi test is a post-hoc analysis method used in statistics to compare multiple algorithms or treatments.
     It is often used after a Friedman test has indicated significant differences across algorithms.
 
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
-                  ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings
-                      were calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05,
-                  which is a common choice in statistical testing.
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance).
-                    Defaults to False.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+        ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings
+        were calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05,
+        which is a common choice in statistical testing.
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance).
+        Defaults to False.
 
-    :return: A tuple containing three elements:
-             - The list of rank values for each algorithm.
-             - The critical distance for the Nemenyi test, which is a threshold used to determine if differences
-               between algorithm rankings are statistically significant.
-             - A figure representing the ranking of the algorithms and the critical distances visually,
-               often as a CD diagram.
+    Returns
+    -------
+    rank_values : list
+        The list of rank values for each algorithm.
+    critical_distance : float
+        The critical distance for the Nemenyi test, which is a threshold used to determine if differences
+        between algorithm rankings are statistically significant.
+    figure : matplotlib.figure.Figure
+        A figure representing the ranking of the algorithms and the critical distances visually,
+        often as a CD diagram.
 
-    Note: The Nemenyi test is non-parametric and is used when the assumptions of parametric tests (like ANOVA)
+    Note
+    ----
+    The Nemenyi test is non-parametric and is used when the assumptions of parametric tests (like ANOVA)
     are not met. It's particularly useful in scenarios where multiple algorithms are compared across various datasets.
     """
 
@@ -865,23 +935,36 @@ def bonferroni(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = 
     The Bonferroni correction is a method to adjust significance levels when multiple statistical tests
     are conducted simultaneously.
 
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
-                  ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
-                      calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
-                  choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
-                    all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
-                    to False.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+        ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were
+        calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common
+        choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None,
+        all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults
+        to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : matplotlib.figure.Figure
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
 
-    Note: This function is useful in statistical analysis where multiple algorithms or treatments are compared
+    Note
+    ----
+    This function is useful in statistical analysis where multiple algorithms or treatments are compared
     and there is a need to control the Type I error (false positive) that increases with the number of comparisons.
     """
     num_algorithm = len(ranks.keys())
@@ -923,18 +1006,31 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     This method is more powerful than the simple Bonferroni correction, especially when the number
     of comparisons is large.
 
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : matplotlib.figure.Figure
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
 
-    Note: The Holm-Bonferroni method adjusts the significance levels of each comparison based on the order of
+    Note
+    ----
+    The Holm-Bonferroni method adjusts the significance levels of each comparison based on the order of
     their p-values, providing a less conservative approach than the original Bonferroni correction. It's particularly
     useful in scenarios with multiple comparisons to control the overall type I error rate.
     """
@@ -986,19 +1082,33 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
             type_rank: str = "Friedman", verbose: bool = False):
     """
     This function applies the Holland step-down procedure for controlling the family-wise error rate in multiple comparisons.
-    It's an improvement over the simple Bonferroni method and is particularly useful when dealing with a large number of comparisons.
+    It's an improvement over the simple Bonferroni method and is particularly useful when dealing with a large number of comparisons,
     and it is generally more powerful than the Bonferroni correction.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : matplotlib.figure.Figure
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
     The Holland method adjusts the alpha values for each comparison based on their rank in p-value, offering a more nuanced control
     over Type I errors compared to the Bonferroni method. It's particularly effective in scenarios with multiple algorithm comparisons,
     ensuring a more accurate interpretation of statistical results.
@@ -1054,23 +1164,37 @@ def finner(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     This function implements the Finner correction, a statistical method for controlling the family-wise error rate
     in multiple comparisons. The Finner correction is an alternative to other methods like Bonferroni or Holm,
     and it is generally more powerful than the Bonferroni correction.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
-                  ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
-                      calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
-                  choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
-                    all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance).
-                    Defaults to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+        ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were
+        calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common
+        choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None,
+        all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance).
+        Defaults to False.
 
-    Note: The Finner method is particularly useful in scenarios involving multiple comparisons, where it provides
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : matplotlib.figure.Figure
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
+    The Finner method is particularly useful in scenarios involving multiple comparisons, where it provides
     a balance between statistical power and control over Type I errors. This makes it a valuable tool in comparative
     studies of algorithms or treatments across various datasets.
     """
@@ -1122,18 +1246,32 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     This function implements the Hommel correction, a statistical method for adjusting p-values when
     performing multiple comparisons. The Hommel correction is a more powerful alternative to the Bonferroni
     correction, particularly when the number of comparisons is large.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
-    Note: The Hommel correction is particularly useful in scenarios with multiple comparisons, as it provides a balance
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : matplotlib.figure.Figure
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
+    The Hommel correction is particularly useful in scenarios with multiple comparisons, as it provides a balance
     between controlling the family-wise error rate and maintaining statistical power. This makes it an effective tool
     in the comparative analysis of algorithms or treatments across various datasets.
     """
@@ -1198,25 +1336,39 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     This function implements the Rom method, which is a step-down procedure for adjusting p-values in the context of
     multiple comparisons. The Rom method is an improvement over the Bonferroni correction, providing a more powerful
     approach, especially when the number of comparisons is large.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
-                  ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
-                      calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
-                  choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
-                    all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
-                    to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+        ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were
+        calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common
+        choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None,
+        all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults
+        to False.
 
-    Note: The Rom method is particularly useful in scenarios involving multiple comparisons, as it offers a more
-          accurate control of the family-wise error rate compared to simpler methods like Bonferroni, especially in
-          cases with a large number of algorithms or treatments being compared.
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : object
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
+    The Rom method is particularly useful in scenarios involving multiple comparisons, as it offers a more
+    accurate control of the family-wise error rate compared to simpler methods like Bonferroni, especially in
+    cases with a large number of algorithms or treatments being compared.
     """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
@@ -1270,20 +1422,34 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     The Li method is particularly useful when there is a control algorithm to compare
     against other algorithms. It adjusts p-values based on the performance of the control
     algorithm relative to others.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults to False.
 
-    Note: The Li method is effective in scenarios where a specific algorithm (the control) is of particular
-        interest, and the comparisons are made between this control and other algorithms. It provides a nuanced
-        way to adjust for multiple comparisons by considering the performance of the control algorithm.
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : object
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
+    The Li method is effective in scenarios where a specific algorithm (the control) is of particular
+    interest, and the comparisons are made between this control and other algorithms. It provides a nuanced
+    way to adjust for multiple comparisons by considering the performance of the control algorithm.
     """
 
     algorithm_names = list(ranks.keys())
@@ -1331,23 +1497,37 @@ def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = No
     It is an alternative to the Bonferroni method and is generally more powerful, especially when
     there are a large number of comparisons. The Hochberg procedure controls the family-wise error rate
     more effectively than some other methods.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
-                  ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
-                      calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
-                  choice in statistical testing.
-    :param control: An optional string specifying a control algorithm against which others will be compared. If None,
-                    all algorithms are compared against each other.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
-                    to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+        ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were
+        calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common
+        choice in statistical testing.
+    control : str, optional
+        An optional string specifying a control algorithm against which others will be compared. If None,
+        all algorithms are compared against each other.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults
+        to False.
 
-    Note: The Hochberg procedure is particularly valuable when conducting multiple comparisons in statistical analysis,
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : object
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
+    The Hochberg procedure is particularly valuable when conducting multiple comparisons in statistical analysis,
     as it provides a more refined approach to controlling the Type I error rate compared to more conservative methods.
     """
 
@@ -1390,26 +1570,39 @@ def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = No
 
 def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "Friedman", verbose: bool = False):
     """
-    This function applies the Shaffer's multiple comparison procedure, which is a more refined method for adjusting
+    This function applies Shaffer's multiple comparison procedure, which is a more refined method for adjusting
     p-values in the context of multiple comparisons. Shaffer's method is an extension of the Bonferroni correction
     and is generally more powerful, particularly when the number of comparisons is large.
-    :param ranks: A dictionary where keys are the names of the algorithms and values are their respective ranks. The
-                  ranks must be obtained based on multiple non-parametrics test.
-    :param num_cases: An integer representing the number of cases, datasets, or instances over which the rankings were
-                      calculated.
-    :param alpha: A float representing the significance level used in the test. It defaults to 0.05, which is a common
-                  choice in statistical testing.
-    :param type_rank: A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
-    :param verbose: A boolean indicating whether to print additional information (like the critical distance). Defaults
-                    to False.
 
-    :return: A tuple containing two elements:
-             - A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
-             - A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+    Parameters
+    ----------
+    ranks : dict
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The
+        ranks must be obtained based on multiple non-parametric tests.
+    num_cases : int
+        An integer representing the number of cases, datasets, or instances over which the rankings were
+        calculated.
+    alpha : float, optional
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common
+        choice in statistical testing.
+    type_rank : str, optional
+        A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
+    verbose : bool, optional
+        A boolean indicating whether to print additional information (like the critical distance). Defaults
+        to False.
 
-    Note: Shaffer's method is particularly effective in scenarios with multiple comparisons, as it provides a more
-        accurate control of the family-wise error rate compared to simpler methods like Bonferroni, especially
-        when the number of algorithms or treatments being compared is large.
+    Returns
+    -------
+    comparison_results : pandas.DataFrame
+        A DataFrame with the results of the comparisons, including adjusted z-values and adjusted p-values.
+    comparison_figure : matplotlib.figure.Figure
+        A figure graphically displaying the results of the tests, typically a bar chart or scatter plot.
+
+    Note
+    ----
+    Shaffer's method is particularly effective in scenarios with multiple comparisons, as it provides a more
+    accurate control of the family-wise error rate compared to simpler methods like Bonferroni, especially
+    when the number of algorithms or treatments being compared is large.
     """
     def _calculate_independent_tests(num: int):
         if num == 0 or num == 1:

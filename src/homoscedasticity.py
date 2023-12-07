@@ -1,35 +1,51 @@
 import pandas as pd
 import numpy as np
 import math
+
 import stats
 
 
 def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'):
     """
-        Perform the Levene test for equality of variances. This test is used to assess whether the variances of two
-        or more groups are equal. It is an essential test before conducting ANOVA, as ANOVA assumes homogeneity of
-        variances.
+    Perform the Levene test for equality of variances. This test is used to assess whether 
+    the variances of two or more groups are equal. It is an essential test before conducting 
+    ANOVA, as ANOVA assumes homogeneity of variances.
 
-        :param dataset: A pandas DataFrame where each column represents a different group/sample. The first column is
-        ignored.
-        :param alpha: The significance level for the test, default is 0.05.
-        :param center: The method for calculating the center of each group - 'mean', 'median', or 'trimmed'. Default is
-        'mean'.
+    Parameters
+    ----------
+    dataset : pandas DataFrame
+        A DataFrame where each column represents a different group/sample. 
+        The first column is ignored.
+    alpha : float, optional
+        The significance level for the test, default is 0.05.
+    center : {'mean', 'median', 'trimmed'}, optional
+        The method for calculating the center of each group. Default is 'mean'.
 
-        :return: A tuple containing the following:
-            - statistic_levene: The Levene test statistic. A higher value indicates a greater likelihood of differing
-              variances.
-            - p_value: The p-value for the hypothesis test. A small p-value (typically ≤ 0.05) rejects the null
-              hypothesis, suggesting that the variances across groups are not equal.
-            - rejected_value: The critical value for the test at the specified alpha level.
-            - hypothesis: A string stating the conclusion of the test based on the test statistic and alpha.
-              It indicates whether the null hypothesis of equal variances can be rejected or not.
+    Returns
+    -------
+    statistic_levene : float
+        The Levene test statistic. A higher value indicates a greater likelihood 
+        of differing variances.
+    p_value : float
+        The p-value for the hypothesis test. A small p-value (typically ≤ 0.05) 
+        rejects the null hypothesis, suggesting that the variances across groups 
+        are not equal.
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic 
+        and alpha. It indicates whether the null hypothesis of equal variances 
+        can be rejected or not.
 
-        Note: The Levene test is robust to non-normal distributions, making it preferable to Bartlett's test when data
-        are not normally distributed. The choice of 'center' parameter (mean, median, trimmed) can affect the test's
-        sensitivity to departures from normality. The test statistic is computed based on the absolute deviations from
-        the group centers and then compared against an F-distribution to obtain the p-value.
+    Notes
+    -----
+    The Levene test is robust to non-normal distributions, making it preferable to Bartlett's 
+    test when data are not normally distributed. The choice of 'center' parameter (mean, median, 
+    trimmed) can affect the test's sensitivity to departures from normality. The test statistic 
+    is computed based on the absolute deviations from the group centers and then compared against 
+    an F-distribution to obtain the p-value.
     """
+
 
     def trimmed_mean(data, proportion_to_cut=0.1):
         n = len(data)
@@ -80,36 +96,49 @@ def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'
     if statistic_levene < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    # print("\t p_value = ", p_value)
-
     return statistic_levene, p_value, rejected_value, hypothesis
 
 
 def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
     """
-        Perform Bartlett's test for homogeneity of variances. This test checks the null hypothesis that all input
-        samples (represented as columns in the dataset) come from populations with equal variances. It is commonly used
-        before conducting ANOVA, as equal variances are an assumption of ANOVA.
+    Perform Bartlett's test for homogeneity of variances. This test checks the null 
+    hypothesis that all input samples (represented as columns in the dataset) come 
+    from populations with equal variances. It is commonly used before conducting ANOVA, 
+    as equal variances are an assumption of ANOVA.
 
-        :param dataset: A pandas DataFrame where each column represents a different group/sample. The first column is
-        ignored.
-        :param alpha: The significance level for the test, default is 0.05.
+    Parameters
+    ----------
+    dataset : pandas DataFrame
+        A DataFrame where each column represents a different group/sample. 
+        The first column is ignored.
+    alpha : float, optional
+        The significance level for the test, default is 0.05.
 
-        :return: A tuple containing the following:
-            - statistical_bartlett: Bartlett's test statistic. A higher value indicates a greater likelihood of
-              differing variances.
-            - p_value: The p-value for the hypothesis test. A small p-value (typically ≤ 0.05) rejects the null
-              hypothesis,
-              suggesting that the variances across groups are not equal.
-            - cv_value: Critical value for the test at the specified alpha level.
-            - hypothesis: A string stating the conclusion of the test based on the test statistic and alpha.
-              It indicates whether the null hypothesis of equal variances can be rejected or not.
+    Returns
+    -------
+    statistical_bartlett : float
+        Bartlett's test statistic. A higher value indicates a greater likelihood 
+        of differing variances.
+    p_value : float
+        The p-value for the hypothesis test. A small p-value (typically ≤ 0.05) 
+        rejects the null hypothesis, suggesting that the variances across groups 
+        are not equal.
+    cv_value : float
+        Critical value for the test at the specified alpha level.
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic 
+        and alpha. It indicates whether the null hypothesis of equal variances 
+        can be rejected or not.
 
-        Note: Bartlett's test is sensitive to departures from normality. Therefore, if the data are not normally
-        distributed, Levene's test is a more appropriate choice. The test statistic is compared against a chi-squared
-        distribution to obtain the p-value. The formula for the test statistic takes into account the number of groups
-        and the total number of samples.
+    Notes
+    -----
+    Bartlett's test is sensitive to departures from normality. Therefore, if the data 
+    are not normally distributed, Levene's test is a more appropriate choice. The test 
+    statistic is compared against a chi-squared distribution to obtain the p-value. 
+    The formula for the test statistic takes into account the number of groups and 
+    the total number of samples.
     """
+
     if dataset.shape[1] < 2:
         raise "Error: Bartlett Test need at least two samples"
 
@@ -137,7 +166,5 @@ def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
 
     if p_value > alpha:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-
-    # print("\t p_value = ", p_value)
 
     return statistical_bartlett, p_value, cv_value, hypothesis
