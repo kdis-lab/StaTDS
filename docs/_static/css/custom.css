@@ -1,0 +1,10 @@
+a {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/*  Header  */
+
+section#torch-spatiotemporal h1 {
+    display: none;
+}
