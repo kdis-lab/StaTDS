@@ -10,53 +10,111 @@ import base64
 from datetime import datetime
 
 import multiprocessing
+from pathlib import Path
 
-#TODO Check imports
+# TODO Check imports
 
 import no_parametrics, parametrics, utils
+import normality, homoscedasticity
 
-
-external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css"]
+current_directory = Path(__file__).resolve().parent
+external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css",
+                        'https://use.fontawesome.com/releases/v5.8.1/css/all.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+app.title = 'StaTDS: Statistical Tests for Data Science'
+app._favicon = "images/logo-StaTDS.png" 
 # suppress_callback_exceptions=True Esto no es una buena práctica pero es la única forma de mantener el control dinámico
 
 
-with open("assets/app/README.md", 'r') as film:
+with open(current_directory / "assets/app/README.md", 'r') as film:
     readme_content = film.read()
 
 
+reference_content = ("Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, " +
+                     "Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)")
+
+bibtext_content = '''
+                    ```latex
+                    @InProceedings{statds, 
+                        author={Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)},
+                        title={(StaTDS): name-article}, 
+                        booktitle={journay}, 
+                        year={2023}
+                    }
+                    ```
+                  '''
+
+
 def generate_text_sample():
-    with open("assets/app/sample_dataset.csv", "r") as f:
+    with open(current_directory / "assets/app/sample_dataset.csv", "r") as f:
         text = f.read()
     return text
 
 
 def generate_navigator_menu():
+    menus_2 = [
+                {"title": html.Img(src="assets/images/logo-StaTDS-without-background.png", style={"width": "5em",
+                                                                                                  "height": "5em"}),
+                 "href": "home", "icon": "mdi:home-outline", "className": "logo-menu"},
+                {"title": html.Img(src="assets/images/logo-kdislab.png", style={"width": "4.25em", "height": "2em",
+                                                                                "margin-top": "1.55em",
+                                                                                "margin-left": "0.425em"
+                                                                                }),
+                 "href": "https://www.uco.es/kdis/", "icon": "mdi:home-outline", "className": "logo-kdis-menu"},
+              ]
     menus = [
-                {"title": html.Img(src="assets/images/logo.png", style={"width": "5em", "height": "1em"}),
-                 "href": "home", "icon": "mdi:home-outline"},
-                {"title": "Data Analysis", "href": "data_analysis"},
-                {"title": "Normality & Homoscedasticity", "href": "normality_homoscedasticity"},
+                {"title": "Data Analysis", "href": "data_analysis", "className": "item-menu"},
+                {"title": "Normality & Homoscedasticity", "href": "normality_homoscedasticity",
+                 "className": "item-menu"},
             ]
     import_button = dbc.Button(children="Import Data", id="import-Data", outline=True, className="menu item-menu")
     export_button = dbc.Button(children="Export Results", id="export-data", outline=True, className="menu item-menu")
-    content = [dcc.Link(children=[html.Div(item["title"], className="item-menu")],
+    content = [dcc.Link(children=[html.Div(item["title"], className=item["className"])],
                         href=item["href"] if "href" in item.keys() else None, className="menu") for item in menus]
 
+    content_2 = [dbc.Button(children=[html.Div(item["title"], className=item["className"])],
+                            href=item["href"] if "href" in item.keys() else None, className="logos-menu", color=None)
+                 for item in menus_2]
+
     download_file = dcc.Download(id="download-text")
-    content = content + [import_button, export_button, generate_import_data_page(), generate_export_table_page(),
-                         download_file]
+    content = [html.Div(content_2, className="left-menu")] + content + [import_button, export_button, generate_import_data_page(),
+                                     generate_export_table_page(), download_file]
     return html.Div(
         children=content, className="navigator_menu"
     )
 
 
 def generate_import_data_page():
+    info_import_data = [
+        dbc.PopoverHeader(html.H3("Data Import Help Guide")),
+        dbc.PopoverBody([
+            html.H5("Choosing the Data Separator"),
+            dcc.Markdown('''
+                    1. Identify the separator used in your dataset (e.g., comma, semicolon, tab).
+                    2. Select the corresponding separator from the 'Type of separator' dropdown menu.
+                    3. Available format is .csv, .txt and .xls.
+                    ''', mathjax=True),
+            html.H5("Option A: Drag and Drop:"),
+            dcc.Markdown('''
+                    1. Drag your file from your computer. 
+                    2. Drop it into the designated 'Drag and Drop or Select File' area.
+                    ''', mathjax=True),
+            html.H5("Option B: Manual Entry"),
+            dcc.Markdown('''
+                    Click inside the 'Insert Dataset' text box.
+                    Enter your data manually, ensuring that it matches the chosen separator format.
+                    ''', mathjax=True)],
+            style={"overflow-y": "scroll", "height": "30em"}
+        ),
+    ]
     example_of_dataset = generate_text_sample()
 
     modal = dbc.Modal(
             [
-                dbc.ModalHeader(dbc.ModalTitle("Import Dataset to analysis")),
+                dbc.ModalHeader([dbc.ModalTitle("Import Dataset to analysis"),
+                                 html.Button(html.I(className="fas fa-info-circle"), id="info_import_data", n_clicks=0,
+                                             className="button-info"),
+                                 dbc.Popover(info_import_data, target="info_import_data", body=True, trigger="legacy")]),
                 dbc.ModalBody(["Type of separator:",
                                dbc.Select(
                                    id="select-separator",
@@ -72,15 +130,12 @@ def generate_import_data_page():
                                ]),
                 dbc.ModalBody(["Insert Dataset",
                                dbc.Textarea(id="textarea-dataset", size="lg", placeholder=example_of_dataset,
-                                            style={'height': '200px'})]),
-                dbc.ModalBody(["Upload File:",
-                               dbc.Textarea(id="path_of_file", size="sm", readOnly=True,
-                                            style={'resize': 'none', 'font-size': '1em', 'height': "1em"}),
+                                            style={'height': '200px'}, className="textarea")]),
+                dbc.ModalBody([
                                dcc.Upload(
                                    id='upload-data',
                                    children=html.Div([
-                                       'Drag and Drop or ',
-                                       html.A('Select File')
+                                       'Drag and Drop or Select File'
                                    ]),
                                    style={
                                        'width': '95%',
@@ -112,7 +167,9 @@ def generate_export_table_page():
 
     modal = dbc.Modal(
             [
-                dbc.ModalHeader(dbc.ModalTitle("Export Results"))
+                dbc.ModalHeader(dbc.ModalTitle("Export Results")),
+                dbc.ModalBody("Here, the results of all the tables generated by the experiments will be displayed.",
+                              id="body-modal-export")
             ],
             id="modal-export",
             size="xl",
@@ -127,7 +184,7 @@ def generate_export_table_page():
 def generate_tabla_of_dataframe(df: pd.DataFrame, height_table: str = '30em'):
     if df is None or df.empty:
         return ""
-
+    height_table = "7.5em" if df.shape[0] == 1 else "14em" if df.shape[0] < 5 else '30em'
     return dag.AgGrid(
         id="table",
         rowData=df.to_dict("records"),
@@ -135,21 +192,87 @@ def generate_tabla_of_dataframe(df: pd.DataFrame, height_table: str = '30em'):
             {'headerName': col, 'field': col} for col in df.columns
         ],
         defaultColDef={"resizable": True, "filter": False, "minWidth": 150, "floatingFilter": False},
-        columnSize="sizeToFit",
-        style={'height': height_table}
+        columnSize="responsiveSizeToFit",
+        style={'height': height_table, "margin-bottom": "1em"}
     )
 
 
 def generate_home_page(dataframe: pd.DataFrame):
-    global readme_content
+    global readme_content, reference_content, bibtext_content
 
+    info_authors = [
+        {"title": "Christian Luna Escudero",
+         "description": "graduated in Computer Science with honors at the University of Córdoba (Spain) in 2023. He "
+                        "is currently studying the Master's Degree in Research in Artificial Intelligence | AEPIA, "
+                        "while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group.",
+         "email": "i82luesc@uco.es", "image": "assets/images/i82luesc.png"},
+        {"title": "Antonio Rafael Moya Martín-Castaño",
+         "description": "is currently a Substitute Professor of Computing Sciences and Numerical Analysis at the University " 
+                        "of Córdoba, while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. "
+                        "His research specializes in hyper-parameter Optimization in Machine Learning models, focusing on deep "
+                        "learning models in this task",
+         "email": "amoya@uco.es", "image": "assets/images/amoya.png"},
+        {"title": "José María Luna Ariza",
+         "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of Córdoba,"
+                        " while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. Is "
+                        "the author of ‘Pattern Mining with Evolutionary Algorithms’ His research specializes in patern"
+                        " mining, particularly in patterns in flexible data.",
+         "email": "jmluna@uco.es", "image": "assets/images/jmluna.png"},
+        {"title": "Sebastián Ventura Soto",
+         "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of "
+                        "Córdoba. His teaching is devoted to computer programming, artificial intelligence, "
+                        "and data mining in undergraduate and graduate (doctoral) studies. His research lab is "
+                        "developed as head of the Knowledge Discovery and Intelligent Systems (KDIS) research group, "
+                        "and it is focused on computational intelligence, data science, and their applications.",
+         "email": "sventura@uco.es", "image": "assets/images/sventura.png"},
+    ]
+
+    row_authors = [dbc.Row([
+        dbc.Col(dbc.CardImg(src=author["image"], className="img-fluid rounded-start"), className="col-md-4"),
+        dbc.Col(dbc.CardBody(
+            [html.H4(author["title"], className="card-title"),
+             html.P(author["description"], className="card-text"),
+             html.Small(html.A(author["email"], href="mailto:" + author["email"]), className="card-text text-muted")]
+        ), className="col-md-8"
+        )
+    ], className="g-0 d-flex align-items-center")
+        for author in info_authors]
+    about_authors = [dbc.Card(i, className="mb-3 card", style={"width": "40em", "margin-right": "1em"}) for i in
+                     row_authors]
+    foother_authors = html.Div(about_authors, className="container_card")
+    # TODO CAMBIAR ESTO DE ARRIBA PARA QUE LOS AUTORES SALGAN UNO AL LADO DEL OTRO
     main_content = html.Div(
         children=[
-            html.H1(children='Statistical Test App', className="title-app"),
+            html.H1(children='StaTDS: Statistical Tests for Data Science', className="title-app"),
             html.Div(id="table-content", children=generate_tabla_of_dataframe(dataframe),
                      className="table-info hidden" if dataframe is None or dataframe.empty else "table-info"),
             html.Div(children=[html.P(readme_content)],
-                     className="content-info")
+                     className="content-info"),
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        html.H5("Reference", className="card-title"),
+                        html.P(reference_content, className="card-text"),
+                        dcc.Markdown(bibtext_content)
+                    ]
+                ),
+                className="content-info",
+            ),
+
+            html.Div([
+                dbc.ButtonGroup([
+                    dbc.Button([html.Img(src='assets/images/logo-send-email.png', className="icon_button"),
+                                "Contact email"], href="mailto:i82luesc@uco.es?cc=sventura@uco.es&subject=StaTDS",
+                               className="button", color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-github.png', className="icon_button"),
+                                "Source on Github"], href="https://github.com/kdis-lab/statistical_lib",
+                               className="button", color="secondary", outline=True),
+                    dbc.Button([html.Img(src='assets/images/logo-python.png', className="icon_button"),
+                                "Python Doc"], href="https://github.com/kdis-lab/statistical_lib", className="button",
+                               color="secondary", outline=True),
+                    ]),
+            ], className="p-4"),
+            foother_authors
         ]
     )
 
@@ -207,6 +330,10 @@ def parse_contents(contents, filename, separator):
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
+        elif 'txt' in filename:
+            # Assume that the user uploaded an txt file
+            df = pd.read_csv(
+                io.StringIO(decoded.decode('utf-8')), sep=separator)
     except Exception as e:
         print(e)
         return html.Div([
@@ -216,26 +343,35 @@ def parse_contents(contents, filename, separator):
     return df
 
 
-def dataframe_to_text(df: pd.DataFrame):
+def dataframe_to_text(df: pd.DataFrame, sep: str):
     column_names = df.columns.tolist()
-    data_rows = [",".join(map(str, row)) for _, row in df.iterrows()]
+    data_rows = [sep.join(map(str, row)) for _, row in df.iterrows()]
 
-    text = "\n".join([",".join(column_names)] + data_rows)
+    text = "\n".join([sep.join(column_names)] + data_rows)
 
     return text
 
 
-@app.callback(Output('path_of_file', 'value'),
-              Output('textarea-dataset', 'value'),
+@app.callback(Output('textarea-dataset', 'value'),
               Input('upload-data', 'contents'),
               State('upload-data', 'filename'),
               State('select-separator', 'value'))
 def update_output(list_of_contents, list_of_names, separator):
     if list_of_contents is not None:
         df = parse_contents(list_of_contents, list_of_names, separator)
-        return [list_of_names, dataframe_to_text(df)]
+        return dataframe_to_text(df, separator)
 
-    return "", ""
+    return ""
+
+
+@app.callback(Output('textarea-dataset', 'placeholder'),
+              Input('select-separator', 'value'))
+def change_example(separator):
+    placeholder = generate_text_sample()
+    separator = "\t" if separator == "\\t" else separator
+    placeholder = placeholder.replace(",", separator)
+
+    return placeholder
 
 
 @app.callback(Output('import-button', 'n_clicks'),
@@ -258,18 +394,23 @@ def import_data(n_clicks, textarea_value, separator, n_clicks_modal, current_ses
     return None, current_session, n_clicks_modal, "/"
 
 
-def generate_alpha_form(multiple_alpha: bool = False):
+def generate_alpha_form(multiple_alpha: bool = False, switch_selector: bool = True):
     available_alpha = [0.1, 0.05, 0.025, 0.01, 0.005, 0.001]
     title = "Alpha(s)" if multiple_alpha else "Alpha"
-    return [html.Label(title, style={"margin-left": "1em", "margin-right": "1em"}),
-            dcc.Dropdown(
-                    options=[{'label': str(i), 'value': str(i)} for i in available_alpha],
-                    value=str(available_alpha[1]), style={'width': 'auto', "min-width": "8em", "max-width": "16em"},
-                    id="selector_alpha", multi=multiple_alpha),
+    return [html.Div([html.Label(title, style={"margin-left": "1em", "margin-right": "1em"}),
+                      dcc.Dropdown(
+                        options=[{'label': str(i), 'value': str(i)} for i in available_alpha],
+                        value=str(available_alpha[1]), style={'width': 'auto', "min-width": "8em", "max-width": "16em"},
+                        id="selector_alpha", multi=multiple_alpha)]),
             html.Div([
-                html.Label('Generate Reports'),
-                daq.BooleanSwitch(id='reports_switch', on=False)
-            ], className="slider-content")]
+                html.Label('Optimization Criterion'),
+                html.Div([
+                        html.Label('Min', style={"margin-right": "0.95em", "margin-left": "0.95em"}),
+                        daq.BooleanSwitch(id='criterion_switch', on=False),
+                        html.Label('Max', style={"margin-left": "1em"})
+                    ], style={'display': 'flex', 'align-items': 'center'})
+            ], className="" if switch_selector else "hidden")
+            ]
 
 
 def generate_select_groups(columns: list, id_selector: str, text_label: str):
@@ -308,31 +449,118 @@ def generate_post_hoc(available_test: list):
 def create_test_form(columns: list, title: str, test_two_groups: list, test_multiple_groups: list,
                      test_post_hoc: list = None, multi_alpha: bool = False):
     class_name_post_hoc = "hidden" if test_post_hoc is None else "form-element"
+
+    info_pairwise_test = [
+        dbc.PopoverHeader(html.H3("Pairwise Test")),
+        dbc.PopoverBody([
+            html.P("They allow determining if two algorithms have similar behaviour. Comparison of algorithms across "
+                   "several data sets, which allows the analysis of whether the effectiveness of the algorithms varies "
+                   "with the specific dataset and if one demonstrates consistently better "
+                   "performance across different contexts."),
+            html.H3("Parametrics Test"),
+            html.H5("T-test paired"),
+            html.H5("T-test unpaired"),
+            html.H3("Non-Parametrics Test"),
+            html.H5("Wilcoxon"),
+            html.H5("Binomial Sign"),
+            html.H5("Mann-Whitney-U"),],
+                                 style={"overflow-y": "scroll", "height": "30em"}  # Ajusta la altura según necesites
+        ),
+    ]
+    info_multiple_test = [
+        dbc.PopoverHeader(html.H3("Multiple Comparisons")),
+        dbc.PopoverBody([
+            html.P("It allows determining if various algorithms behave similarly across multiple data sets."),
+            html.H3("Parametrics Test"),
+            html.H5("ANOVA between cases"),
+            html.H5("ANOVA within cases"),
+            html.H3("Non-Parametrics Test"),
+            html.H5("Friedman"),
+            html.H5("Friedman Aligned Ranks"),
+            html.H5("Quade"),
+            html.H3("Post-hcc"),
+            html.P("Once a Multiple Comparisons analysis has been performed, if significant differences arise after "
+                   "concluding, post-hoc tests are necessary. Post-hoc tests determine where our differences come from,"
+                   " and it is possible to consider a comparison among all pairs of algorithms or a comparison between "
+                   "a control algorithm and the rest."),
+            html.H5("Bonferroni-Dunn"),
+            html.H5("Holm"),
+            html.H5("Holland"),
+            html.H5("Finner"),
+            html.H5("Hochberg"),
+            html.H5("Hommel"),
+            html.H5("Rom"),
+            html.H5("Li"),
+            html.H5("Shaffer"),
+            html.H5("Nemenyi"),],
+            style={"overflow-y": "scroll", "height": "30em"}  # Ajusta la altura según necesites
+        ),
+    ]
+
     return html.Div([
         html.H3(title),
         html.Div(generate_alpha_form(multi_alpha), className="form-element"),
-        html.H5('Two Groups'),
+        html.Div([html.H5('Two Groups', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_pairwise_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_pairwise_test, target="info_pairwise_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_two_groups, "selector_two_groups"), className="form-element"),
         html.Div(generate_select_groups(columns, "select_group_1", "First Group"),
                  className="form-element"),
         html.Div(generate_select_groups(columns, "select_group_2", "Second Group"),
                  className="form-element"),
-        html.H5('Multiple Groups'),
+        html.Div([html.H5('Multiple Groups', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_multiple_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_multiple_test, target="info_multiple_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_multiple_groups, "selector_multiple_groups"),
                  className="form-element"),
         html.Div(generate_post_hoc(test_post_hoc), className=class_name_post_hoc),
         html.Div(generate_select_groups(columns, "select_control", "Control"),
-                 className="form-element"),
+                 className="form-element")
     ])
 
 
 def create_norm_form(title: str, test_two_groups: list, test_multiple_groups: list, multi_alpha: bool = False):
+
+    info_normality_test = [
+        dbc.PopoverHeader(html.H3("Normality Test")),
+        dbc.PopoverBody([
+            html.P("Data normality suggests that it adheres to a Gaussian (normal) distribution, as represented by its "
+                   "probability density function in Equation "),
+            dcc.Markdown('''$$ 
+            f(x) = \\frac{1}{\\sigma \\sqrt{2\\pi}} e^{-\\frac{1}{2}(\\frac{x - \\mu}{\\sigma})^2} $$ ''',
+                         mathjax=True),
+            html.H5("Shapiro-Wilk"),
+            html.H5("D’Agostino-Pearson / Omnibus Tets"),
+            html.H5("Kolmogorov-Smirnov")],
+            style={"overflow-y": "scroll", "height": "30em"})]
+
+    info_homoscedasticity_test = [
+        dbc.PopoverHeader(html.H3("Homoscedasticity Test")),
+        dbc.PopoverBody([
+            html.P("Homoscedasticity refers to the assumption that the variances across the data are equal or "
+                   "'homogeneous', an essential consideration in parametrics tests."),
+            html.H5("Levene"),
+            html.H5("Bartlett")],
+            style={"overflow-y": "scroll", "height": "30em"})]
+
     return html.Div([
         html.H3(title),
-        html.Div(generate_alpha_form(multi_alpha), className="form-element"),
-        html.H5('Normality'),
+        html.Div(generate_alpha_form(multi_alpha, switch_selector=False), className="form-element"),
+        html.Div([html.H5('Normality', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_normality_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_normality_test, target="info_normality_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_two_groups, "selector_normality"), className="form-element"),
-        html.H5('Homoscedasticity'),
+        html.Div([html.H5('Homoscedasticity', style={"display": "inline-block"}),
+                  html.Button(html.I(className="fas fa-info-circle"), id="info_homoscedasticity_test", n_clicks=0,
+                              className="button-info"),
+                  dbc.Popover(info_homoscedasticity_test, target="info_homoscedasticity_test", body=True, trigger="legacy")],
+                 style={"text-align": "center"}),
         html.Div(generate_selector_test(test_multiple_groups, "selector_homoscedasticity"),
                  className="form-element"),
     ])
@@ -343,8 +571,8 @@ def left_block_test(title: str, test_two_groups: list, test_multiple_groups: lis
     return html.Div([
         create_norm_form(title, test_two_groups, test_multiple_groups, multi_alpha),
         html.Div([
-            html.Button('Send', id='submit-norm'),
-            html.Button('Reset', id='reset-norm')
+            html.Button('Generate Results', id='submit-norm', className="button-form"),
+            html.Button('Clear Results', id='reset-norm', className="button-form")
         ], className='form-element')
     ], className='left-block')
 
@@ -357,17 +585,15 @@ def left_block_experiments(columns: list, title: str, test_two_groups: list, tes
 
     return html.Div([
         create_test_form(columns, title, test_two_groups, test_multiple_groups, test_post_hoc, multi_alpha),
-        html.Div([
-            html.Button('Add Experiment', id='add-experiment'),
-            html.Div([html.Button('Send', id='process-experiment'),
-                      html.Button('Reset', id='reset-experiment', style={"margin-left": "0.5em"})])
-        ], className='form-element'),
+        html.Button('Add Experiment', id='add-experiment', className="button-form center"),
         html.Div([
             html.H3('List of Experiments'),
             html.Div(generate_tabla_experiment(table, height_table="15em"), id="table-experiments"),
             html.Div([
-                html.Button("Remove Seleted Experiments", id="remove-experiment"),
-                html.Button("Remove All Experiments", id="remove-all-experiment")
+                html.Div([html.Button("Remove Selected", id="remove-experiment", className="button-form"),
+                          html.Button("Remove All", id="remove-all-experiment", className="button-form")]),
+                html.Div([html.Button('Generate Results', id='process-experiment', className="button-form"),
+                          html.Button('Clear Results', id='reset-experiment', className="button-form")])
             ], className='form-element'),
         ])
     ], className='left-block')
@@ -407,11 +633,13 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
     post_hoc_no_parametrics = [
         {'label': "Nemenyi", 'value': "Nemenyi"},
         {'label': "Bonferroni", 'value': "Bonferroni"},
+        {'label': "Li", 'value': "Li"},
         {'label': "Holm", 'value': "Holm"},
         {'label': "Finner", 'value': "Finner"},
         {'label': "Hochberg", 'value': "Hochberg"},
-        {'label': "Schaffer", 'value': "Schaffer"},
-        {'label': "Li", 'value': "Li"}
+        {'label': "Hommel", 'value': "Hommel"},
+        {'label': "Rom", 'value': "Rom"},
+        {'label': "Schaffer", 'value': "Schaffer"}
     ]
 
     test_normality = [
@@ -422,6 +650,7 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
 
     test_homocedasticity = [
         {'label': "Levene", 'value': "Levene"},
+        {'label': "Bartlett", 'value': "Bartlett"}
     ]
 
     if pathname in ['/home', "/"]:
@@ -479,12 +708,18 @@ def results_two_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
     statistic, critical_value, p_value, hypothesis = test_function(selected_data, alpha)
     if p_value is None:
-        result = f"Statistic: {statistic} Critical Value: {critical_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "Critical Value": [critical_value],
+                                     "Result": [hypothesis]})
     else:
-        result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "P-value": [p_value], "Result": [hypothesis]})
+
+    caption = f"Results {columns[0]} test (significance level of {alpha})"
+    result, test_result_exportable = generate_table_and_textarea(data_results, "7em", caption)
+    # TODO FALTA PONER LA PARTE DE EXPORTA
     title = html.H3(f"Two Groups to {columns[1]} vs {columns[2]}", className="title")
     subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
-    return html.Div([title, subtitle, result])
+    content_to_export = [subtitle, test_result_exportable]
+    return html.Div([title, subtitle, result]), html.Div(content_to_export)
 
 
 def prueba_paralelizada(args, queue):
@@ -494,102 +729,26 @@ def prueba_paralelizada(args, queue):
     if type(results) is pd.DataFrame:
         object_result = [results.to_dict()]
     else:
-        if type(results[0]) is pd.DataFrame:
+        if type(results) is tuple and type(results[0]) is pd.DataFrame:
             object_result = [results[0].to_dict()]
-        fig = results[-1]
+        fig = results[-1] if type(results) is tuple else results
         buf = io.BytesIO()  # in-memory files
-        fig.savefig(buf, format="png")
+        fig.savefig(buf, format="png", transparent=True)
         data = base64.b64encode(buf.getbuffer()).decode("utf8")  # encode to html elements
         buf.close()
         object_result.extend(["data:image/png;base64,{}".format(data)])
     queue.put(object_result)
 
 
-def results_multiple_groups_ant(data: pd.DataFrame, parameters: dict, alpha: float):
-    # TODO Cambiar esto cuando este el anova mejorado:
-
-    def anova_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_test(dataset, alpha_value)
-        return pd.DataFrame(),  s, p, c, h
-
-    def anova_within_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_within_cases_test(dataset, alpha_value)
-        return pd.DataFrame(),  s, p, c, h
-
-    columns = list(parameters.values())
-    # Se genera mediante la librería
-    if columns[0] is None:
-        return
-
-    available_test = {"Friedman": no_parametrics.friedman,
-                      "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
-                      "Quade": no_parametrics.quade,
-                      "ANOVA between cases": anova_cases,
-                      "ANOVA within cases": anova_within_cases
-                      }
-
-    test_function = available_test[columns[0]]
-
-    rankings_with_label, statistic, p_value, critical_value, hypothesis = test_function(data, alpha)
-    test_result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
-    test_subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
-    title = html.H3(f"Multiple Groups", className="title")
-
-    rankings = pd.DataFrame({i[0]: [round(i[1], 5)] for i in rankings_with_label.items()})
-    table = generate_tabla_of_dataframe(rankings, height_table="7.2em")
-    content = [title, test_subtitle, test_result, table]
-    if not(columns[1] is None):
-        available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
-                              "Bonferroni": no_parametrics.bonferroni,
-                              "Holm": no_parametrics.holm,
-                              "Finner": no_parametrics.finner,
-                              "Hochberg": no_parametrics.hochberg,
-                              "Schaffer": no_parametrics.shaffer,
-                              "Li": no_parametrics.li,
-                              }
-        post_hoc_function = available_post_hoc[columns[1]]
-
-        parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": False, "verbose": False, "name_fig": "",
-                                  "all_vs_all": True, "control": None}
-        args_functions = inspect.signature(post_hoc_function)
-        args = {name: parameter.default for name, parameter in args_functions.parameters.items()
-                if name not in ["self", "kwargs", "args"]}
-
-        parameters_to_function = {i: parameters_to_function[i] for i in args.keys()}
-
-        result_queue = multiprocessing.Queue()
-        process = multiprocessing.Process(target=prueba_paralelizada, args=([post_hoc_function, parameters_to_function],
-                                                                            result_queue))
-        process.start()
-        process.join()
-        results = result_queue.get()
-        if type(results[0]) is dict:
-            post_hoc_result = [generate_tabla_of_dataframe(pd.DataFrame(results[0]))]
-            post_hoc_result.extend([html.Img(src=results[-1], width="50%", height="50%")])
-            post_hoc_result = html.Div(post_hoc_result)
-        else:
-            post_hoc_result = html.Img(src=results[-1], width="100%", height="100%")
-        text_post_hoc = f"Post hoc: {columns[1]} test (significance level of {alpha})"
-        if columns[1] == "Nemenyi" and alpha in ["0.025", "0.005", "0.001"]:
-            text_post_hoc = text_post_hoc[:-1] + "approximate results)"
-        
-        post_hoc_subtitle = html.H5(text_post_hoc,
-                                    style={"margin-top": "0.5em"})
-        content.extend([post_hoc_subtitle, post_hoc_result])
-    return html.Div(children=content)
+def generate_table_and_textarea(table_data, height, caption_text, id_val="textarea-dataset"):
+    print("HOLA")
+    table = generate_tabla_of_dataframe(table_data, height_table=height)
+    text_table = utils.dataframe_to_latex(table_data, caption=caption_text)
+    textarea = dbc.Textarea(id=id_val, size="lg", value=text_table, style={'height': '200px', "margin-bottom": "0.5em"})
+    return table, textarea
 
 
 def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
-    # TODO Cambiar esto cuando este el anova mejorado:
-
-    def anova_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_test(dataset, alpha_value)
-        return pd.DataFrame(), s, p, c, h
-
-    def anova_within_cases(dataset: pd.DataFrame, alpha_value: float = 0.05):
-        s, p, c, h = parametrics.anova_within_cases_test(dataset, alpha_value)
-        return pd.DataFrame(), s, p, c, h
 
     columns = list(parameters.values())
     # Se genera mediante la librería
@@ -599,41 +758,67 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     available_test = {"Friedman": no_parametrics.friedman,
                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                       "Quade": no_parametrics.quade,
-                      "ANOVA between cases": anova_cases,
-                      "ANOVA within cases": anova_within_cases
+                      "ANOVA between cases": parametrics.anova_cases,
+                      "ANOVA within cases": parametrics.anova_within_cases
                       }
 
     test_function = available_test[columns[0]]
 
-    rankings_with_label, statistic, p_value, critical_value, hypothesis = test_function(data, alpha)
+    parameters_to_function = {"dataset": data, "alpha": alpha, "criterion": parameters["criterion"], "verbose": False}
+    args_functions = inspect.signature(test_function)
+    args = {name: parameter.default for name, parameter in args_functions.parameters.items()
+            if name not in ["self", "kwargs", "args"]}
+
+    parameters_to_function = {i: parameters_to_function[i] for i in args.keys()}
+
+    table_results, statistic, p_value, critical_value, hypothesis = test_function(**parameters_to_function)
 
     if p_value is None:
-        test_result = f"Statistic: {statistic} Critical Value: {critical_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "Critical Value": [critical_value],
+                                     "Result": [hypothesis]})
     else:
-        test_result = f"Statistic: {statistic} P-value: {p_value} Result: {hypothesis}"
+        data_results = pd.DataFrame({"Statistic": [statistic], "P-value": [p_value], "Result": [hypothesis]})
+
+    caption = f"Results {columns[0]} test (significance level of {alpha})"
+    test_result, test_result_exportable = generate_table_and_textarea(data_results, "7em", caption)
     test_subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
     title = html.H3(f"Multiple Groups", className="title")
+    content = [title, test_subtitle, test_result]
+    content_to_export = [test_subtitle, test_result_exportable]
+    if type(table_results) is list:
+        tab_1, tab_1_exportable = generate_table_and_textarea(table_results[0], "14em", "Data Summary")
+        caption_2 = f"Summary {columns[0]} test (significance level of {alpha})"
+        tab_2, tab_2_exportable = generate_table_and_textarea(table_results[1], "14em", caption_2)
+        
+        content.extend([tab_1, tab_2])
+        content_to_export.extend([tab_1_exportable, tab_2_exportable])
+    else:
+        rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
+        rankings_data = pd.DataFrame(rankings_data)
+        rankings_with_label = table_results
+        caption = f"Rankings of {columns[0]} test (significance level of {alpha})"
+        table, table_exportable = generate_table_and_textarea(rankings_data, "7.2em", caption)
+        
+        content.append(table)
+        content_to_export.append(table_exportable)
 
-    rankings = pd.DataFrame({i[0]: [round(i[1], 5)] for i in rankings_with_label.items()})
-    table = generate_tabla_of_dataframe(rankings, height_table="7.2em")
-    text_table = utils.dataframe_to_latex(rankings,
-                                          caption=f"Rankings of {columns[0]} test (significance level of {alpha})")
-    table_exportable = dbc.Textarea(id="textarea-dataset", size="lg", value=text_table, style={'height': '200px'})
-    content = [title, test_subtitle, test_result, table]
-    content_to_export = [test_subtitle, table_exportable]
-    if not (columns[1] is None):
+    if not (columns[1] is None) and type(table_results) is dict:
         available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
                               "Bonferroni": no_parametrics.bonferroni,
+                              "Li": no_parametrics.li,
                               "Holm": no_parametrics.holm,
+                              "Holland": no_parametrics.holland,
                               "Finner": no_parametrics.finner,
                               "Hochberg": no_parametrics.hochberg,
-                              "Schaffer": no_parametrics.shaffer,
-                              "Li": no_parametrics.li,
+                              "Hommel": no_parametrics.hommel,
+                              "Rom": no_parametrics.rom,
+                              "Schaffer": no_parametrics.shaffer
                               }
         post_hoc_function = available_post_hoc[columns[1]]
 
         parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": False, "verbose": False, "name_fig": "", "control": parameters["control"]
+                                  "criterion": parameters["criterion"], "verbose": False, "name_fig": "",
+                                  "control": parameters["control"], "type_rank": columns[0]
                                   }
         args_functions = inspect.signature(post_hoc_function)
         args = {name: parameter.default for name, parameter in args_functions.parameters.items()
@@ -673,30 +858,20 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     return [html.Div(children=content), html.Div(content_to_export)]
 
 
-def generate_analysis(test_selected: dict):
-    result_two_groups = results_two_groups(test_selected["data"], test_selected["two_groups"], test_selected["alpha"])
-    result_multiple_groups = results_multiple_groups(test_selected["data"], test_selected["multiple_groups"],
-                                                     test_selected["alpha"])
-    content = [result_two_groups, result_multiple_groups[0]]
-    """if test_selected["inform"] is True:
-        content.extend([html.Button("Download Text", id="btn-download-txt"),
-                        ])"""
-
-    return html.Div(content)
-
-
 def create_data_table(names_exp, parameters_exp):
-    table = {"Name Experiment": [], "Alpha": [], "Test": []}
+    table = {"Name Experiment": [], "Alpha": [], "Test": [], "Criterion": []}
     for index, value in enumerate(zip(names_exp, parameters_exp)):
         experiment, parameter = value
         table["Name Experiment"].append(experiment)
         table["Alpha"].append(parameter["alpha"])
+        criterion = "" if "criterion" not in parameter.keys() else "Maximize" if parameter["criterion"] else "Minimize"
+        table["Criterion"].append(criterion)
         if "post_hoc" in parameter.keys():
             # test = [parameter["test"], parameter["post_hoc"]]
             test = f"{parameter['test']}"
-            if not(parameter["post_hoc"] is None):
+            if not (parameter["post_hoc"] is None):
                 test += f", {parameter['post_hoc']}"
-                if "control" in parameter.keys() and not(parameter["control"] is None):
+                if "control" in parameter.keys() and not (parameter["control"] is None):
                     test += f" ({parameter['control']})"
         else:
             test = f"{parameter['test']} ({parameter['first_group']}, {parameter['second_group']})"
@@ -714,8 +889,8 @@ def generate_tabla_experiment(df: pd.DataFrame, height_table: str = '30em'):
         columnDefs=[
             {'headerName': col, 'field': col} for col in df.columns
         ],
-        defaultColDef={"resizable": True, "filter": False, "minWidth": 150, "floatingFilter": False},
-        columnSize="sizeToFit",
+        defaultColDef={"resizable": True, "filter": False, "minWidth": 100, "floatingFilter": False},
+        columnSize="responsiveSizeToFit",
         style={'height': height_table},
         dashGridOptions={"rowSelection": "multiple", "rowMultiSelectWithClick": True},
     )
@@ -729,20 +904,22 @@ def generate_inform(dataset, experiments: dict, generate_pdf: bool = False, name
               Output('results_experiments', 'className'),
               Output("reset-experiment", "n_clicks"),
               Output("modal-export", "children"),
-              Output("download-text", "data"),
+              Output("user-file", "data"),
               Input("process-experiment", "n_clicks"),
               Input("reset-experiment", "n_clicks"),
-              State('reports_switch', 'on'),
               State('user-experiments', 'data'),
               State('user-data', 'data'))
-def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_session):
+def process_experiment(n_clicks, reset, user_experiments, current_session):
     if n_clicks is None and reset is None:
         return dash.no_update
 
     name_file_pdf = ""
-
+    generate_pdf = True
+    export_modal = [dbc.ModalHeader(dbc.ModalTitle("Export Results")),
+                    dbc.ModalBody("Here, the results of all the tables generated by the experiments will be displayed.")
+                   ]
     if reset:
-        return html.Div(""), "", None, dbc.ModalHeader(dbc.ModalTitle("Export Results")), name_file_pdf
+        return html.Div(""), "", None, export_modal, name_file_pdf
 
     available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
@@ -783,8 +960,17 @@ def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_
                 alpha_results = [results_two_groups(df, test_selected, i) for i in info_experiment["alpha"]]
             else:
                 alpha_results = [results_two_groups(df, test_selected, info_experiment["alpha"])]
+
+            alpha_results, table_results = zip(*alpha_results)
+
+            table_results = (html.H3(f"Experiment {name_experiment} : {type_test}",
+                                     className="title"),) + table_results
+            table_results += (dbc.Textarea(id="textarea-dataset", size="sm", value="", style={'height': '0',
+                                                                                              'visibility': 'hidden'}),)
+            content_exportable.extend([dbc.ModalBody(table_results)])
         elif info_experiment["test"] in available_test_multiple_groups.keys():
             test_selected = {"test": info_experiment["test"], "post_hoc": info_experiment["post_hoc"],
+                             "criterion": info_experiment["criterion"], 
                              "control": info_experiment["control"] if info_experiment["post_hoc"] not in ["Nemenyi",
                                                                                                           "Schaffer"]
                              else None}
@@ -802,16 +988,14 @@ def process_experiment(n_clicks, reset, generate_pdf, user_experiments, current_
                                                                                               'visibility': 'hidden'}),)
             content_exportable.extend([dbc.ModalBody(table_results)])
 
-        content.extend([html.H3(f"Experiment {name_experiment} : {type_test}", className="title")])
-        content.extend(alpha_results)
-
-    if generate_pdf is True:
-        content.extend([html.Button("Download Text", id="btn-download-txt"),
-                        dcc.Download(id="download-text")])
-        # TODO Poner que el nombre sea aleatorio con respecto al tiempo para que no haya solapamientos  
-
-    send_file = None if name_file_pdf == "" else dcc.send_file(name_file_pdf)
-    return html.Div(content), "", None, html.Div(content_exportable), send_file
+        # content.extend([html.H3(f"Experiment {name_experiment} : {type_test}", className="title")])
+        # content.extend(alpha_results)
+        # content.extend(html.Hr())
+        content.extend([dbc.AccordionItem(children=html.Div(alpha_results),
+                                          title=f"Experiment {name_experiment} : {type_test}")])
+    show_info = html.Div([html.Button("Download Report", id="btn-download-txt", className="button-form center"),
+                          dbc.Accordion(content, id="accordion-always-open", always_open=True)])
+    return show_info, "", None, html.Div(content_exportable), name_file_pdf
 
 
 def get_letter_experiment(index):
@@ -845,10 +1029,11 @@ def get_number_from_text(text):
               State('selector_post_hoc', 'value'),
               State('select_control', 'value'),
               State('user-experiments', 'data'),
-              State("list-experiment", "selectedRows")
+              State("list-experiment", "selectedRows"),
+              State("criterion_switch", "on")
               )
 def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, test_two_groups, group_1, group_2,
-                   test_multiple_groups, test_post_hoc, control, user_experiments, selected_experiment):
+                   test_multiple_groups, test_post_hoc, control, user_experiments, selected_experiment, criterion):
     if add_n_clicks is None and remove_n_clicks is None and remove_all_n_clicks is None:
         return dash.no_update
 
@@ -869,7 +1054,7 @@ def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, te
 
         if not (test_multiple_groups is None):
             names_exp.append(get_letter_experiment(index_exp))
-            args = {"alpha": alpha, "test": test_multiple_groups, "post_hoc": test_post_hoc, "criterion": True}
+            args = {"alpha": alpha, "test": test_multiple_groups, "post_hoc": test_post_hoc, "criterion": criterion}
             if test_post_hoc not in ["Nemenyi", "Schaffer"]:
                 args["control"] = control
 
@@ -902,68 +1087,145 @@ def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, te
     return generate_tabla_experiment(pd.DataFrame(tabla), height_table="15em"), new_user_experiments, None, None, None
 
 
-# TODO FALTA ARREGLAR LAS FUNCIONES DE LOS TEST PARAMETRICOS
 def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, test_homoscedasticity: str):
-    available_normality_test = {"Shapiro-Wilk": parametrics.shapiro_wilk_normality,
-                                "D'Agostino-Pearson": parametrics.d_agostino_pearson,
-                                "Kolmogorov-Smirnov": parametrics.kolmogorov_smirnov,
+    available_normality_test = {"Shapiro-Wilk": normality.shapiro_wilk_normality,
+                                "D'Agostino-Pearson": normality.d_agostino_pearson,
+                                "Kolmogorov-Smirnov": normality.kolmogorov_smirnov,
                                 }
-    available_homocedasticity_test = {"Levene": parametrics.levene_test}
-
-    test_normality_function = available_normality_test[test_normality]
+    available_homocedasticity_test = {"Levene": homoscedasticity.levene_test,
+                                      "Bartlett": homoscedasticity.bartlett_test}
+    content, content_exportable = [], []
     alpha = float(alpha)
-    columns = list(dataset.columns)
-    statistic_list, p_value_list, cv_value_list, hypothesis_list = [], [], [], []
+    if test_normality:
+        if test_normality not in available_normality_test:
+            raise ValueError(f"Test de normalidad '{test_normality}' no disponible.")
+        test_normality_function = available_normality_test[test_normality]
+        columns = list(dataset.columns)
+        statistic_list, p_value_list, cv_value_list, hypothesis_list, graficos = [], [], [], [], []
+        for i in range(1, len(columns)):
+            statistic, p_value, cv_value, hypothesis = test_normality_function(dataset[columns[i]].to_numpy(), alpha)
+            statistic_list.append(statistic)
+            p_value_list.append(p_value)
+            cv_value_list.append(cv_value)
+            hypothesis_list.append(hypothesis)
+            result_queue = multiprocessing.Queue()
+            process = multiprocessing.Process(target=prueba_paralelizada, args=([normality.qq_plot,
+                                                                                 {"data": dataset[
+                                                                                     columns[i]].to_numpy()}],
+                                                                                result_queue))
+            process.start()
+            process.join()
+            qq_plot_figure = result_queue.get()
 
-    for i in range(1, len(columns)):
-        statistic, p_value, cv_value, hypothesis = test_normality_function(dataset[columns[i]].to_numpy(), alpha)
-        # TODO realizar el bucle
-        statistic_list.append(statistic)
-        p_value_list.append(p_value)
-        cv_value_list.append(cv_value)
-        hypothesis_list.append(hypothesis)
+            result_queue = multiprocessing.Queue()
+            process = multiprocessing.Process(target=prueba_paralelizada, args=([normality.pp_plot,
+                                                                                 {"data": dataset[
+                                                                                     columns[i]].to_numpy()}],
+                                                                                result_queue))
+            process.start()
+            process.join()
+            pp_plot_figure = result_queue.get()
 
-    test_subtitle = html.H5(f"{test_normality} test (significance level of {alpha})")
-    title = html.H3(f"Normality Analysis", className="title")
+            graficos.append([html.Img(src=qq_plot_figure[-1], width="50%", height="50%"),
+                             html.Img(src=pp_plot_figure[-1], width="50%", height="50%")])
 
-    results_test = pd.DataFrame({"Dataset": columns[1:], "Statistic": statistic_list, "p-value": p_value_list,
-                                 "Results": hypothesis_list})
+        test_subtitle = html.H5(f"{test_normality} test (significance level of {alpha})")
+        title = html.H3(f"Normality Analysis", className="title")
 
-    table = generate_tabla_of_dataframe(results_test, height_table=f"{4.2 * len(results_test)}em")
-    content = [title, test_subtitle, table]
-    if not(test_homoscedasticity is None):
+        results_test = pd.DataFrame({"Dataset": columns[1:], "Statistic": statistic_list, "p-value": p_value_list,
+                                     "Results": hypothesis_list})
+
+        table, export_table = generate_table_and_textarea(results_test, height=f"{4.2 * len(results_test)}em",
+                                                          caption_text=test_subtitle)
+
+        images = html.Div([
+            html.Button("Show Graphs pp-plot and qq-plot", id="collapse-button", n_clicks=0,
+                        style={"margin-top": "0.5em", "margin-bottom": "0.5em"}),
+            dbc.Collapse(dbc.Card(dbc.CardBody([html.Div([html.H3(columns[i+1]), html.Div([fig[0], fig[1]])]) for i, fig
+                                                in enumerate(graficos)])),
+                         id="collapse",
+                         is_open=False,
+                         )
+        ])
+        content = [title, test_subtitle, table, images]
+        content_exportable = [html.H3(f"{test_normality} test (significance level of {alpha})", className="title"),
+                              export_table]
+        content_exportable += (dbc.Textarea(id="textarea-dataset", size="sm", value="", style={'height': '0',
+                                                                                               'visibility': 'hidden'}),)
+
+    if not (test_homoscedasticity is None):
         test_homocedasticity_function = available_homocedasticity_test[test_homoscedasticity]
         statistic, p_value, cv_value, hypothesis = test_homocedasticity_function(dataset, alpha)
+        title_homoscedasticity = f"{test_homoscedasticity} test (significance level of {alpha})"
+        if p_value is None:
+            test_result = pd.DataFrame({"Statistic": [statistic], "Critical Value": [cv_value],
+                                         "Result": [hypothesis]})
+        else:
+            test_result = pd.DataFrame({"Statistic": [statistic], "P-value": [p_value], "Result": [hypothesis]})
 
-        test_result = f"Statistic: {statistic} Critical Value: {cv_value}  Result: {hypothesis}"
-        test_subtitle = html.H5(f"{test_homoscedasticity} test (significance level of {alpha})")
+        table, export_table = generate_table_and_textarea(test_result, height=f"{4.2 * len(test_result)}em",
+                                                          caption_text=title_homoscedasticity)
+
+        test_subtitle = html.H5(title_homoscedasticity)
         title = html.H3(f"Homocedasticity Analysis", className="title")
 
-        content.extend([title, test_subtitle, test_result])
+        content.extend([title, test_subtitle, table])
+        homoscedasticity_export = [html.H3(title_homoscedasticity, className="title"), export_table,
+                                   dbc.Textarea(id="textarea-dataset", size="sm", value="",
+                                                style={'height': '0', 'visibility': 'hidden'})]
+        content_exportable.extend(homoscedasticity_export)
 
-    return content
+    return content, content_exportable
 
 
 @app.callback(Output('results_normality', 'children'),
               Output('results_normality', 'className'),
               Output("reset-norm", "n_clicks"),
+              Output("body-modal-export", "children"),
               Input("submit-norm", "n_clicks"),
               Input("reset-norm", "n_clicks"),
-              State('reports_switch', 'on'),
               State('selector_alpha', 'value'),
               State('selector_normality', 'value'),
               State('selector_homoscedasticity', 'value'),
               State('user-data', 'data'))
-def process_normality(n_clicks, reset, generate_pdf, alpha, test_normality, test_homoscedasticity, current_data):
+def process_normality(n_clicks, reset, alpha, test_normality, test_homoscedasticity, current_data):
     if n_clicks is None and reset is None:
         return dash.no_update
     if reset:
         return html.Div(""), "", None
 
     dataset = pd.DataFrame(current_data)
-    content = results_normality(dataset, alpha, test_normality, test_homoscedasticity)
+    content, content_export = results_normality(dataset, alpha, test_normality, test_homoscedasticity)
+    # TODO PENSAR SI MERECE LA PENA PERMITIR GENERAR GRÁFICOS EN LA PARTE DE NORMALIDAD
+    print(content_export)
+    print(type(content_export))
+    return html.Div(content), "", None, html.Div(content_export)
+    # return html.Div("Hola"), "", None, "hola"
 
-    return html.Div(content), "", None
+@app.callback(
+    Output("collapse", "is_open"),
+    [Input("collapse-button", "n_clicks")],
+    [State("collapse", "is_open")],
+)
+def toggle_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("download-text", "data"),
+    Input("btn-download-txt", "n_clicks"),
+    State("user-file", "data")
+)
+def download_report(n_clicks, name_file):
+    if n_clicks is None:
+        return dash.no_update
+    return dcc.send_file(name_file)
+
+
+def start_app(host: str = '127.0.0.1', port: int = 8050):
+    app.run(debug=True, port=port, host=host)
 
 
 if __name__ == '__main__':

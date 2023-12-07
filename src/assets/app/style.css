@@ -1,9 +1,8 @@
 .navigator_menu {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     background-color: #333;
     white-space: nowrap;
-    align-items: flex-start;
 }
 
 .menu {
@@ -14,7 +13,6 @@
     padding: 0;
     text-decoration: none;
     font-weight: bold;
-    margin-right: auto;
 }
 
 .menu.right {
@@ -28,7 +26,7 @@
     margin: 0 10px;
     overflow: hidden;
     text-align: center;
-    padding: 14px 16px;
+    padding: 2em 16px;
     text-decoration: none;
     color: white;
     text-decoration-color: red;
@@ -36,6 +34,57 @@
 
 /* Change the link color to #111 (black) on hover */
 .item-menu:hover {
+  /*background-color: #111; */
+  color: white;
+  background-color: #276E90;
+}
+
+.left-menu{
+    margin-right: auto;
+}
+
+.logos-menu{
+    margin: 0 1em;
+}
+
+.logo-kdis-menu {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    text-align: center;
+    /*margin: 0 10px;
+    padding: 1.5em 16px;
+    */
+    text-decoration: none;
+    color: white;
+    border-radius: 50%;
+    text-decoration-color: red;
+    background-color: white;
+    width: 5em;
+    height: 5em;
+}
+
+/* Change the link color to #111 (black) on hover */
+.logo-kdis-menu:hover {
+  /*background-color: #111; */
+  background-color: #276E90;
+}
+
+
+.logo-menu {
+    display: flex;
+    flex-direction: row;
+    margin: 0 1em;
+    overflow: hidden;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    text-decoration-color: red;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.logo-menu:hover {
   /*background-color: #111; */
   background-color: #276E90;
 }
@@ -46,19 +95,17 @@
 }
 
 .content-info {
-    width: 600px;
+    width: 50%;
     padding: 20px;
-    border: 2px solid #333;
-    border-radius: 10px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
     margin: 50px auto;
-    text-align: center;
+    text-align: justify;
 }
 
 .table-info{
     width: 75%;
     padding: 20px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
     margin: 50px auto;
     text-align: center;
 }
@@ -115,4 +162,64 @@
 
 .content_page{
     padding-top: 2em;
+}
+
+.button:hover{
+    background-color: #276E90;
+}
+
+.icon_button {
+    height: 2em;
+    margin-right: 0.5em;
+}
+
+.container_card {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around; /* Esto distribuirá el espacio uniformemente alrededor de tus tarjetas */
+  flex: 0 1 auto; /* Esto permite que tus tarjetas se encogen y crezcan pero mantengan su tamaño automático basado en el contenido */
+  margin: 10px; /* Esto añade un poco de espacio entre las tarjetas */
+  justify-content: center; /* Centra el contenido verticalmente */
+  height: 100%; /* Asegúrate de que la tarjeta tenga una altura para que el contenido pueda centrarse dentro de ella */
+}
+
+.button-form{
+    display: block;
+    width: 10em;
+    height: auto;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    justify-content: center; /* Centra el contenido verticalmente */
+}
+
+.center {
+    display: inline;
+    margin-top: 0.5em;
+}
+
+.accordion-button {
+    font-size: xx-large;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: white;
+    color: black;
+}
+
+.textarea::placeholder{
+    color: #C1BEBE;
+    font-style: italic;
+}
+
+.button-info{
+    background: transparent;
+    padding: 0;
+    display: inline-block;
+    border: none;
+    vertical-align: middle,
+    margin-left: 10em;
+}
+
+.popover {
+    max-width: 40em;
 }

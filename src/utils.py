@@ -2,9 +2,11 @@ import inspect
 import io
 import base64
 import pandas as pd
-import no_parametrics, parametrics
+import matplotlib.pyplot as plt
 
 from pathlib import Path
+
+import no_parametrics, parametrics
 
 try:
     from fpdf import FPDF
@@ -23,27 +25,17 @@ class LibraryError(Exception):
         super().__init__(message)
 
 
-def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
-    s, p, c, h = parametrics.anova_test(dataset, alpha)
-    return pd.DataFrame(), s, p, c, h
-
-
-def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
-    s, p, c, h = parametrics.anova_within_cases_test(dataset, alpha)
-    return pd.DataFrame(), s, p, c, h
-
-
-properties = {"title-header": "Inform elaborated with LIBRARY",
-              "subtitle-header": "Version X.X",
-              "ref-library": "https://github.com/kdis-lab/lac"}
+properties = {"title-header": "Inform elaborated with StaTDS",
+              "subtitle-header": "Version 1.0",
+              "ref-library": "https://github.com/kdis-lab/statds"}
 
 available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                   "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                                   "Quade": no_parametrics.quade,
                                   # "ANOVA between cases": parametrics.anova_test,
                                   # "ANOVA within cases": parametrics.anova_within_cases_test
-                                  "ANOVA between cases": anova_cases,
-                                  "ANOVA within cases": anova_within_cases
+                                  "ANOVA between cases": parametrics.anova_cases,
+                                  "ANOVA within cases": parametrics.anova_within_cases
                                   }
 available_test_two_groups = {"Wilcoxon": no_parametrics.wilconxon,
                              "Binomial Sign": no_parametrics.binomial,
@@ -66,12 +58,17 @@ parametrics_test = ["T-Test paired", "T-Test unpaired", "ANOVA between cases", "
 if available_fpdf:
 
     class InformPDF(FPDF):
-        """docstring for InformPDF"""
+        """ A custom class for creating PDF documents with specific formatting and layout features. """
         def __init__(self):
             """
-            Class constructor. Initializes the dimensions of the FPDF document.
+            Initializes the dimensions of the FPDF document.
 
-            :return:
+            Attributes
+            ----------
+            default_margin : float
+                The default left margin of the document.
+            margin_bottom_threshold : float
+                The bottom margin threshold of the document, set to 10% of the document's height.
             """
             super().__init__()
             self.default_margin = self.l_margin
@@ -79,9 +76,17 @@ if available_fpdf:
 
         def check_page_break(self, h):
             """
-                This function checks if a page break is necessary before adding content with a height of h.
-            :param h: Height of the element to be checked.
-            :return: True if a new page needs to be added, otherwise, it returns False.
+            Checks if a page break is necessary before adding content with a specified height.
+
+            Parameters
+            ----------
+            h : float
+                Height of the element to be checked.
+
+            Returns
+            -------
+            bool
+                True if a new page needs to be added, otherwise False.
             """
             if self.get_y() + h > self.page_break_trigger:
                 self.add_page()
@@ -90,35 +95,32 @@ if available_fpdf:
 
         def header(self):
             """
-                Defines the document header, which includes an image on the left and text in three different rows on
-                the right, configured with different styles and alignments.
-            :return:
+            Defines the document header. The header includes an image on the left and text in three different rows on
+            the right, configured with different styles and alignments.
             """
-            self.reset_margin()
+
+            # self.reset_margin()
             # Logo (imagen) a la izquierda
-            self.image(current_directory / 'assets/images/logo.png', 10, 15, 33)  # Reemplaza 'tu_logo.png' con la ruta de tu imagen
+            self.image(current_directory / 'assets/images/logo-kdislab.png', 40, 15, 33)
+            self.image(current_directory / 'assets/images/logo-StaTDS-without-background.png', 10, 4, 30)
             # Texto a la derecha en tres filas distintas
             self.set_font("helvetica", "B", 15)
             # Moving cursor to the right:
-            self.cell(160)
-            # Printing title:
+            self.set_xy(160, 10)
             self.cell(30, 10, properties["title-header"], align="R")
             # Performing a line break:
-            self.ln(6)
-            self.cell(160)
+            self.set_xy(160, 15)
             self.set_font("helvetica", "I", 11)
             self.cell(30, 10, properties["subtitle-header"], align="R")
-            self.ln(6)
-            self.cell(160)
+            self.set_xy(160, 20)
             self.set_font("helvetica", "I", 15)
             self.cell(30, 10, properties["ref-library"], align="R")
-            self.ln(10)
+            self.ln(12)
 
         def footer(self):
             """
-               Defines the document footer, displaying the current page number and the total number of pages.
-            :return:
-            """
+            Defines the document footer. The footer displays the current page number and the total number of pages.
+            """ 
             self.set_y(-15)
             # Setting font: helvetica italic 8
             self.set_font("helvetica", "I", 8)
@@ -128,14 +130,22 @@ if available_fpdf:
 
         def print_header(self, text, font_size=16, font_style='B', fill=False, border="", align="L"):
             """
-                Enables printing custom headers in the document based on the provided arguments.
-            :param text: Text to be printed.
-            :param font_size: Font size for the header.
-            :param font_style: Font style for the header.
-            :param fill: Fill options.
-            :param border: Border style for the header.
-            :param align: Text alignment type.
-            :return:
+            Prints custom headers in the document based on the provided arguments.
+
+            Parameters
+            ----------
+            text : str
+                Text to be printed in the header.
+            font_size : int, optional
+                Font size for the header, default is 16.
+            font_style : str, optional
+                Font style for the header, default is 'B' (bold).
+            fill : bool, optional
+                Whether to fill the header background, default is False.
+            border : str, optional
+                Border style for the header, default is empty (no border).
+            align : str, optional
+                Text alignment for the header, default is 'L' (left-aligned).
             """
             self.set_font('Times', font_style, font_size)
             if fill:
@@ -145,8 +155,7 @@ if available_fpdf:
 
         def reset_margin(self):
             """
-                Function responsible for resetting the document's left margin to the default value.
-            :return:
+            Resets the document's left margin to the default value.
             """
             self.set_left_margin(self.default_margin)
 
@@ -154,26 +163,71 @@ if available_fpdf:
     def create_inform(pdf: InformPDF, title_experiment, title, test_subtitle, test_result, h_post_hoc, show_table,
                       show_graph, fig_size):
         """
-            Creates an informative PDF document with specified content.
-        :param pdf: An instance of InformPDF, a custom PDF generation class.
-        :param title_experiment: Title for the experiment section.
-        :param title: Title for the document.
-        :param test_subtitle: Subtitle for the test section.
-        :param test_result: List of test results to be displayed.
-        :param h_post_hoc: Post-hoc information or analysis to be included.
-        :param show_table: A DataFrame containing results the test results.
-        :param show_graph: Path to an image file to be displayed.
-        :param fig_size: Size of the figure (width, height).
-        :return:
+        Creates an informative PDF document with specified content.
+
+        Parameters
+        ----------
+        pdf : InformPDF
+            An instance of InformPDF, a custom PDF generation class.
+        title_experiment : str
+            Title for the experiment section.
+        title : str
+            Title for the document.
+        test_subtitle : str
+            Subtitle for the test section.
+        test_result : list
+            List of test results to be displayed.
+        h_post_hoc : str
+            Post-hoc information or analysis to be included.
+        show_table : pandas.DataFrame
+            A DataFrame containing the test results.
+        show_graph : str
+            Path to an image file to be displayed.
+        fig_size : tuple
+            Size of the figure (width, height).
         """
+        def create_table(show_table):
+            data = [show_table.columns.tolist()] + show_table.values.tolist()
+
+            # Establecer el ancho de las columnas
+            col_width = pdf.w / (len(show_table.columns) * 2)
+            # size_cols = [25, 15, 35, 15, 20, 35]
+            size_cols = [25] * len(show_table.columns)
+            with pdf.table(width=sum(size_cols), col_widths=size_cols, borders_layout="MINIMAL",
+                           headings_style=FontFace(emphasis="B")) as t:
+
+                aligns = ['C'] * len(show_table.columns)
+                table_width = col_width * len(show_table.columns)
+                x = (pdf.w - table_width) / 2
+
+                # Establecer la posición x para la primera celda en la fila
+                pdf.set_x(x)
+                # Agregar filas a la tabla
+                pdf.set_font("Times", "", 12)
+                for i, row in enumerate(data):
+                    row_table = t.row()
+                    for item, align in zip(row, aligns):
+                        text = str(round(item, 4)) if type(item) is float else str(item)
+                        row_table.cell(text, align)
+
+                    pdf.set_x(x)
+
         pdf.print_header(text=title_experiment, font_size=16, font_style='B', fill=False, align="C")
         pdf.print_header(text=title, font_size=14, font_style='B', fill=True, border="L")
         pdf.print_header(text=test_subtitle, font_size=12, font_style='BI')
         pdf.set_font("Times", "", 11)
         pdf.set_left_margin(pdf.l_margin * 1.5)
+        tables_to_show = []
         for item in test_result:
+            if type(item) is pd.DataFrame:
+                tables_to_show.append(item)
+                continue
             pdf.cell(txt=item, markdown=True)
             pdf.ln()
+
+        # Show new tables
+        for i in tables_to_show:
+            create_table(i)
 
         pdf.reset_margin()
 
@@ -184,30 +238,7 @@ if available_fpdf:
             pdf.set_font("Times", "", 16)
 
             if not (show_table is None):
-                data = [show_table.columns.tolist()] + show_table.values.tolist()
-
-                # Establecer el ancho de las columnas
-                col_width = pdf.w / (len(show_table.columns) * 2)
-                size_cols = [30, 20, 35, 20, 35]
-
-                with pdf.table(width=sum(size_cols), col_widths=size_cols, borders_layout="MINIMAL",
-                               headings_style=FontFace(emphasis="B")) as t:
-
-                    aligns = ['C'] * len(show_table.columns)
-                    table_width = col_width * len(show_table.columns)
-                    x = (pdf.w - table_width) / 2
-
-                    # Establecer la posición x para la primera celda en la fila
-                    pdf.set_x(x)
-                    # Agregar filas a la tabla
-                    pdf.set_font("Times", "", 12)
-                    for i, row in enumerate(data):
-                        row_table = t.row()
-                        for item, align in zip(row, aligns):
-                            text = str(round(item, 4)) if type(item) is float else str(item)
-                            row_table.cell(text, align)
-
-                        pdf.set_x(x)
+                create_table(show_table)
 
             if show_graph != "":
                 adjustment_factor = [12, 18]
@@ -219,9 +250,17 @@ if available_fpdf:
 
 def gets_args_functions(name_function):
     """
-        Get the arguments and their default values for a given function.
-    :param name_function: The function for which argument information is required.
-    :return: A dictionary containing argument names as keys and their default values as values.
+    Retrieves the arguments and their default values for a specified function.
+
+    Parameters
+    ----------
+    name_function : function
+        The function for which argument information is required.
+
+    Returns
+    -------
+    dict
+        A dictionary containing argument names as keys and their default values as values.
     """
     args_functions = inspect.signature(name_function)
 
@@ -233,21 +272,31 @@ def gets_args_functions(name_function):
 
 def print_results(title_experiment, title, test_subtitle, test_result, h_post_hoc, show_table, show_graph):
     """
-        Print the results and related information to the console.
-    :param title_experiment: Title for the experiment section.
-    :param title: Title for the document.
-    :param test_subtitle: Subtitle for the test section.
-    :param test_result: List of test results to be printed.
-    :param h_post_hoc: Post-hoc information or analysis to be included.
-    :param show_table: A DataFrame containing results the test results.
-    :param show_graph: Name of the saved graph or None if no graph is available.
-    :return:
+    Prints the results and related information to the console.
+
+    Parameters
+    ----------
+    title_experiment : str
+        Title for the experiment section.
+    title : str
+        Title for the document.
+    test_subtitle : str
+        Subtitle for the test section.
+    test_result : list
+        List of test results to be printed.
+    h_post_hoc : str
+        Post-hoc information or analysis to be included.
+    show_table : pandas.DataFrame
+        A DataFrame containing the test results.
+    show_graph : str
+        Name of the saved graph or None if no graph is available.
     """
     print(title_experiment)
     print(title)
     print(test_subtitle)
     for item in test_result:
-        print(f"\t {item}")
+        show = item if type(item) is pd.DataFrame else f"\t {item}"
+        print(show)
 
     if h_post_hoc != "":
         print(h_post_hoc)
@@ -260,12 +309,18 @@ def print_results(title_experiment, title, test_subtitle, test_result, h_post_ho
 
 def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = False, name_pdf: str = "inform.pdf"):
     """
-        Perform statistical analysis on experiments and optionally generate a PDF report.
-    :param dataset: The dataset containing the experimental data.
-    :param experiments: A dictionary defining the experiments and their parameters.
-    :param generate_pdf: Whether to generate a PDF report (default is False).
-    :param name_pdf: Name PDF (default is inform.pdf).
-    :return:
+    Performs statistical analysis on experiments and optionally generates a PDF report.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        The dataset containing the experimental data.
+    experiments : dict
+        A dictionary defining the experiments and their parameters.
+    generate_pdf : bool, optional
+        Whether to generate a PDF report (default is False).
+    name_pdf : str, optional
+        Name of the PDF file (default is 'inform.pdf').
     """
     global available_test_multiple_groups, available_test_two_groups, available_post_hoc, parametrics_test
     pdf = None
@@ -274,7 +329,7 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=pdf.margin_bottom_threshold)
         pdf.set_title("Reports of statistics analysis")
-        pdf.set_author("Library X")
+        pdf.set_author("Library StaTDS")
 
     if type(experiments) is not dict:
         raise LibraryError("Error: Data structure not compatible with the expected format. Dictionary is expected. "
@@ -331,12 +386,17 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         fig_size = []
 
         if multigroup_test:
-            rankings_with_label, statistic, p_value, critical_value, hypothesis = test_function(**function_args)
+            table_results, statistic, p_value, critical_value, hypothesis = test_function(**function_args)
             test_result = [f"- **Statistic:** {statistic}", f"- **Result:** {hypothesis}"]
             if p_value is None:
                 test_result.extend([f"- **Critival Value:** {critical_value}"])
             else:
                 test_result.extend([f"- **P-value:** {p_value}"])
+            if type(table_results) is list:
+                test_result.extend(table_results)
+            else:
+                rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
+                test_result.append(pd.DataFrame(rankings_data))
             if post_hoc_test:
                 if info_experiment["post_hoc"] not in available_post_hoc.keys():
                     raise LibraryError("Error: Post Hoc no available")
@@ -348,9 +408,11 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
                 control = info_experiment["control"] if "control" in info_experiment.keys() else None
                 all_vs_all = info_experiment["all_vs_all"] if "all_vs_all" in info_experiment.keys() else True
 
-                function_args = {"ranks": rankings_with_label, "num_cases": dataset.shape[0],
+                function_args = {"ranks": table_results, "num_cases": dataset.shape[0],
                                  "alpha": float(info_experiment["alpha"]), "control": control,
-                                 "all_vs_all": all_vs_all, "verbose": False}
+                                 "all_vs_all": all_vs_all, "verbose": False,
+                                 "type_rank": info_experiment["test"]
+                                 }
 
                 function_args = {i: function_args[i] for i in args.keys()}
 
@@ -386,16 +448,30 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
             print_results(f"Experiment {name_experiment} : {type_test}", title, test_subtitle, test_result,
                           h_post_hoc, show_table, show_graph)
 
+        plt.close('all')
+
     if generate_pdf:
         pdf.output(name_pdf)
 
 
 def process_alpha_experiment(parameter):
     """
-        Process and validate experiment parameters, including alpha level and test details.
-    :param parameter: A dictionary containing experiment parameters.
-    :return: A dictionary containing processed and validated experiment parameters.
-    :raises: LibraryError: If the provided parameters are invalid or missing.
+    Processes and validates experiment parameters, including alpha level and test details.
+
+    Parameters
+    ----------
+    parameter : dict
+        A dictionary containing experiment parameters.
+
+    Returns
+    -------
+    dict
+        A dictionary containing processed and validated experiment parameters.
+
+    Raises
+    ------
+    LibraryError
+        If the provided parameters are invalid or missing.
     """
     available_alpha = [0.1, 0.05, 0.025, 0.01, 0.005, 0.001]
     name_test_two_groups = ["Wilcoxon", "Binomial Sign", "Mann-Whitney U", "T-Test paired", "T-Test unpaired"]
@@ -403,9 +479,8 @@ def process_alpha_experiment(parameter):
                                  "ANOVA within cases"]
 
     struct = {}
-    # TODO PORQUE FALLA CUANOD LE PASO EL VALOR DEL ALPHA EN UNA VARIABLE
 
-    if not(float(parameter["alpha"]) in available_alpha):
+    if not (float(parameter["alpha"]) in available_alpha):
         raise LibraryError(f"Error: {parameter['alpha']} is not found in the list of available alphas")
 
     struct["alpha"] = float(parameter["alpha"])
@@ -435,10 +510,19 @@ def process_alpha_experiment(parameter):
 
 def generate_json(names_experiments: list, parameters_experiments: list):
     """
-        Generate a JSON structure containing experiment parameters.
-    :param names_experiments: List of experiment names.
-    :param parameters_experiments: List of dictionaries containing experiment parameters.
-    :return: A dictionary representing experiment parameters in a structured JSON format.
+    Generates a JSON structure containing experiment parameters.
+
+    Parameters
+    ----------
+    names_experiments : list
+        List of experiment names.
+    parameters_experiments : list
+        List of dictionaries containing experiment parameters.
+
+    Returns
+    -------
+    dict
+        A dictionary representing experiment parameters in a structured JSON format.
     """
     struct_json = {}
     for index, value in enumerate(zip(names_experiments, parameters_experiments)):
@@ -456,13 +540,21 @@ def generate_json(names_experiments: list, parameters_experiments: list):
 
 def dataframe_to_latex(dataframe: pd.DataFrame, caption: str = None, label: str = None):
     """
-    Converts a pandas DataFrame into LaTeX code to create a table.
+    Converts a pandas DataFrame into LaTeX code for table creation.
 
-    :param dataframe: The pandas DataFrame to be converted.
-    :param caption: The table title in LaTeX (optional).
-    :param label: The table label in LaTeX (optional).
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+        The pandas DataFrame to be converted.
+    caption : str, optional
+        The table caption in LaTeX.
+    label : str, optional
+        The table label in LaTeX.
 
-    :return: str LaTeX code to create a table
+    Returns
+    -------
+    str
+        LaTeX code for creating a table.
     """
     latex_code = "\\begin{table}[ht]\n\\centering\n"
 
@@ -534,16 +626,17 @@ if __name__ == "__main__":
         }
     }
     import pandas as pd
-    df = pd.read_csv("test_all_vs_all.csv")
+    df = pd.read_csv("assets/app/sample_dataset.csv")
     # analysis_of_experiments(df, analysis_form, generate_pdf=True)
     columns = list(df.columns)
 
-    aux = generate_json(["hola", "adios", "p", "a"],
+    aux = generate_json(["A", "B", "C", "D", "E"],
                         [{"alpha": 0.05, "test": "Wilcoxon", "first_group": columns[1],
                           "second_group": columns[-1]},
                          {"alpha": "0.05", "test": "T-Test paired",
                           "first_group": columns[1], "second_group": columns[-1]},
                          {"alpha": 0.05, "test": "ANOVA between cases", "criterion": True},
-                         {"alpha": [0.05, 0.01, 0.1], "test": "Friedman", "criterion": True, "post_hoc": "Bonferroni"}])
-    print("hola")
-    analysis_of_experiments(df, aux, generate_pdf=False)
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Bonferroni"},
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Nemenyi"}
+                         ])
+    analysis_of_experiments(df, aux, generate_pdf=True)

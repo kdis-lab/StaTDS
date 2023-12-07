@@ -1,208 +1,46 @@
 import numpy as np
 import math
 import pandas as pd
+
 import stats
 
 
-def shapiro_wilk_normality(data: np.array, alpha: float = 0.05):
-
-    sorted_data = np.sort(data)
-
-    mean = sorted_data.mean()
-    sum_square = np.sum((np.array(sorted_data) - mean) ** 2)
-
-    num_samples = data.shape[0]
-    m = num_samples // 2.0
-    # Calculate Weights A
-    a_weights = stats.get_shapiro_weights(num_samples)
-    # Calculate b with = SUM_{i=1}^m a_i * (X_{n+1-i} - X_i{})
-    # TODO CAMBIAR EL CALCULO DE B
-    # https://www.itl.nist.gov/div898/handbook/prc/section2/prc213.htm
-    b = np.sum([a_weights[i] * (sorted_data[num_samples - (i + 1)] - sorted_data[i]) for i in range(len(a_weights))])
-
-    statistics_w = (b ** 2) / sum_square
-
-    # Calculate p-value with Shapiro-Wilk Tables
-    # Preguntar esto:
-    # https://sci2s.ugr.es/keel/pdf/algorithm/articulo/shapiro1965.pdf
-    # https://real-statistics.com/tests-normality-and-symmetry/statistical-tests-normality-symmetry/shapiro-wilk-test/
-
-    p_value, cv_value = stats.get_p_value_shapier(num_samples, statistics_w), None
-
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if p_value > alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-    return statistics_w, p_value, cv_value, hypothesis
-
-
-def skewness(data: np.array, bias: bool = True):
-    mean = data.mean()
-    x_minus_mean = data - mean
-    num_samples = data.shape[0]
-    m_3 = np.sum(x_minus_mean ** 3) / num_samples
-    m_2 = np.sum(x_minus_mean ** 2) / num_samples
-    statistical_skew = m_3 / (math.sqrt(m_2 ** 3))
-
-    if bias is False:
-        statistical_skew = (math.sqrt(num_samples * (num_samples - 1)) / (num_samples - 2)) * statistical_skew
-
-    return statistical_skew
-
-
-def kurtosis(data: np.array, bias: bool = True):
-    mean = data.mean()
-    x_minus_mean = data - mean
-    num_samples = data.shape[0]
-    m_4 = np.sum(x_minus_mean ** 4) / num_samples
-    m_2 = np.sum(x_minus_mean ** 2) / num_samples
-    statistical_kurtosis = m_4 / (m_2 ** 2)
-
-    if bias is False:
-        adj = ((num_samples - 1) / ((num_samples-2) * (num_samples-3)))
-        statistical_kurtosis = adj * ((num_samples + 1) * statistical_kurtosis + 6)
-
-    return statistical_kurtosis
-
-
-def d_agostino_pearson(data: np.array, alpha: float = 0.05):
-    sorted_data = np.sort(data)
-
-    mean = sorted_data.mean()
-
-    skew = skewness(sorted_data)
-    kurt = kurtosis(sorted_data)
-    num_samples = sorted_data.shape[0]
-
-    ses = math.sqrt((6 * num_samples * (num_samples - 1)) / ((num_samples - 2) * (num_samples + 1) * (num_samples - 3)))
-    sek = 2 * ses * math.sqrt((num_samples ** 2 - 1) / ((num_samples - 3) * (num_samples + 5)))
-
-    standard_score_s = skew / ses
-    standard_score_k = kurt / sek
-
-    statistic_dp = standard_score_s ** 2 + standard_score_k ** 2
-
-    # Calculate p-value with chi^2 with 2 degrees of freedom
-    p_value, cv_value = stats.get_p_value_chi2(statistic_dp, 2, alpha=alpha)
-
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if p_value > alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-
-    return statistic_dp, p_value, cv_value, hypothesis
-
-
-def kolmogorov_smirnov(data: np.array, alpha: float = 0.05):
-    def norm_cdf(x):
-        # Función de distribución acumulativa (CDF) de una distribución normal estándar
-        return [0.5 * (1 + math.erf((i - np.mean(x)) / (np.std(x) * np.sqrt(2)))) for i in x]
-
-    sorted_data = np.sort(data)
-
-    # Calcular la función de distribución acumulativa empírica (ECDF)
-    n = len(sorted_data)
-    ecdf = np.arange(1, n + 1) / n
-
-    # Calcular la diferencia máxima entre la ECDF y la CDF de una distribución normal
-    d_max = np.max(np.abs(ecdf - norm_cdf(sorted_data)))
-
-    # Calcular el estadístico de Kolmogorov-Smirnov (KS)
-    ks_statistic = d_max * np.sqrt(n)
-    # TODO ARREGLAR ESTO ESTA MAL
-    # https://radzion.com/blog/probability/kolmogorov
-    p_value = 1.0 - ks_statistic * (0.0498673470 - 0.142088994 + 0.0776645018 /
-                                    (ks_statistic - 0.0122854966 + 0.253199760))
-
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if p_value > alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-    cv_value = None
-
-    return d_max, p_value, cv_value, hypothesis
-
-
-def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'):
-    if dataset.shape[1] < 2:
-        raise "Error: Levene Test need at least two samples"
-
-    if center not in ["mean", "median", "trimmed"]:
-        raise "Error: Center of Levene Test must be 'mean', 'median' or 'trimmed'"
-
-    names_groups = list(dataset.columns)[1:]
-    num_groups = len(names_groups)
-    num_samples = [dataset[i].shape[0] for i in names_groups]
-    num_total = np.sum(num_samples)
-
-    if center == "mean":
-        calculate_center = np.mean
-    elif center == "median":
-        calculate_center = np.median
-    else:
-        calculate_center = np.mean  # TODO Change for the trimmed mean
-
-    factor_inicial = (num_total - num_groups) / (num_groups - 1)
-
-    center_of_groups = [calculate_center(dataset[i]) for i in names_groups]
-
-    z_ij = [abs(dataset[names_groups[i]] - center_of_groups[i]).to_numpy() for i in range(len(names_groups))]
-
-    z_bar_i = np.array([np.mean(i) for i in z_ij])
-    z_bar = [i * j for i, j in zip(z_bar_i, num_samples)]
-    z_bar = np.sum(z_bar)
-
-    numer = np.sum(num_samples * (z_bar_i - z_bar) ** 2)
-    dvar = np.sum([np.sum((z_ij[i] - z_bar_i[i]) ** 2, axis=0) for i in range(num_groups)])
-
-    statistic_levene = factor_inicial * (numer / dvar)
-
-    # TODO Calculate P-Valor F Distribution with alpha, k-1, N-k (Revisar tras hablar)
-    # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
-    rejected_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
-    p_value = None
-
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if statistic_levene < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-
-    # print("\t p_value = ", p_value)
-
-    return statistic_levene, p_value, rejected_value, hypothesis
-
-
-def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
-    if dataset.shape[1] < 2:
-        raise "Error: Bartlett Test need at least two samples"
-
-    names_groups = list(dataset.columns)
-    num_groups = len(names_groups)
-    num_samples = [dataset[i].shape[0] for i in names_groups]
-    num_total = np.sum(num_samples)
-
-    std_groups = [np.std(dataset[i]) for i in names_groups]
-
-    pooled_variance = np.sum([((num_samples[i] - 1) * (std_groups[i] ** 2)) / (num_total - num_groups) for i in
-                              range(num_groups)])
-
-    numerator = (num_total - num_groups) * math.log(pooled_variance ** 2) - (np.sum([(num_samples[i] - 1) *
-                                                                                     math.log(std_groups[i] ** 2)
-                                                                                     for i in range(num_groups)]))
-
-    denominator = 1 + (1/(3.0 * (num_groups - 1))) * (np.sum([1 / (i - 1.0) for i in num_samples]) -
-                                                      (1 / float(num_total - num_groups)))
-    statistical_bartlett = numerator / denominator
-
-    p_value, cv_value = stats.get_p_value_chi2(statistical_bartlett, num_groups-1, alpha=alpha)
-
-    if p_value > alpha:
-        print(f"Same distributions (fail to reject H0) with alpha {alpha}")
-    else:
-        print(f"Different distributions (reject H0) with alpha {alpha}")
-
-    print("\t p_value = ", p_value)
-
-    return statistical_bartlett, p_value, cv_value
-
-
 def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
+    """
+    Perform a paired t-test. This statistical test is used to compare the means of two related groups of samples,
+    typically before and after a specific treatment or intervention. The test assumes that the differences between
+    pairs are normally distributed.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different group/sample. These groups must be related 
+        or paired in some way (e.g., measurements before and after an intervention).
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    verbose : bool, optional
+        A boolean indicating whether to print detailed results. If True, prints the test statistic, rejected value, 
+        p-value, and hypothesis. Default is False.
+
+    Returns
+    -------
+    statistical_t : float
+        The t-test statistic. A higher absolute value indicates a greater difference between the paired groups.
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic and alpha. It indicates whether the null 
+        hypothesis (no difference between means) can be rejected or not.
+
+    Note
+    ----
+    The paired t-test is appropriate for comparing two means from the same group or individual under two different conditions. 
+    The test statistic is calculated by dividing the mean difference between paired observations by the standard error of 
+    the mean difference. The test is sensitive to the normality assumption of the differences between pairs.
+    """
+
     if dataset.shape[1] != 2:
         raise "Error: T Test need two samples"
 
@@ -217,7 +55,6 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
 
     # TODO Calculate P-Valor T Distribution with alpha, degrees_of_freedom = num_samples - 1 (Revisar tras hablar)
 
-    # p_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     p_value = None
 
@@ -231,6 +68,41 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
 
 
 def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
+    """
+    Perform an unpaired (independent) t-test. This statistical test is used to compare the means of two unrelated
+    groups of samples to determine if there is a statistically significant difference between the two means. It's
+    appropriate when the two groups are independent of each other.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with exactly two columns, each representing a different group/sample. These groups must be 
+        independent or unpaired.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+    verbose : bool, optional
+        A boolean indicating whether to print detailed results. If True, prints the test statistic, rejected value, 
+        p-value, and hypothesis. Default is False.
+
+    Returns
+    -------
+    statistical_t : float
+        The t-test statistic. A higher absolute value indicates a greater difference between the group means.
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic and alpha. It indicates whether the null 
+        hypothesis (no difference between means) can be rejected or not.
+
+    Note
+    ----
+    The unpaired t-test assumes that the two groups have equal variances and that the samples are randomly drawn. 
+    The test statistic is calculated by taking the difference between the two group means and dividing by the standard 
+    error of the mean difference. The test is sensitive to the normality assumption of the sample data.
+    """
+
     if dataset.shape[1] != 2:
         raise "Error: T Test need two samples"
 
@@ -247,7 +119,6 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
     statistical_t = np.mean(dataset[names_groups[0]]) - np.mean(dataset[names_groups[1]]) / std_of_the_mean_value
 
     # TODO Calculate P-Valor T Distribution with alpha, degrees_of_freedom = num_samples - 1 (Revisar tras hablar)
-    # p_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     p_value = None
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
@@ -260,7 +131,42 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
     return statistical_t, rejected_value, p_value, hypothesis
 
 
-def anova_test(dataset: pd.DataFrame, alpha: float = 0.05):
+def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
+    """
+    Perform an ANOVA (Analysis of Variance) test. This statistical test is used to compare the means of two or more
+    groups to determine if at least one group mean is significantly different from the others. It's commonly used
+    when there are three or more groups.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame where each column represents a different group/sample. The first column is ignored.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+
+    Returns
+    -------
+    summary_results : pandas.DataFrame
+        A DataFrame with a summary of each group's mean, standard deviation, and standard error.
+    anova_results : pandas.DataFrame
+        A DataFrame with the ANOVA results, including degrees of freedom, sum of squares, mean square, F-statistic, 
+        and rejected value for between groups and within groups.
+    statistical_f_anova : float
+        The F-statistic for the ANOVA test. A higher value suggests a greater difference between group means.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    hypothesis : str
+        A string stating the conclusion of the test based on the F-statistic and alpha.
+
+    Note
+    ----
+    ANOVA tests the null hypothesis that all group means are equal. The test assumes that the groups are
+    sampled from populations with normal distributions and equal variances. The F-statistic is calculated based on
+    the ratio of variance between the groups to the variance within the groups. A significant F-statistic (p-value
+    less than alpha) indicates that at least one group mean is significantly different.
+    """
     if dataset.shape[1] < 2:
         raise "Error: Anova Test need at least two samples"
 
@@ -288,19 +194,72 @@ def anova_test(dataset: pd.DataFrame, alpha: float = 0.05):
 
     statistical_f_anova = ms_bg / ms_wg
 
-    # TODO Calculate P-Valor F Dist with alpha df_numerator (df_bg) df_denominator (df_wg) (Revisar tras hablar)
     # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
     rejected_value = stats.get_cv_f_distribution(df_bg, df_wg, alpha=alpha)
-    p_value = None
+    p_value = stats.get_p_value_f(statistical_f_anova, df_bg, df_wg)
 
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if statistical_f_anova < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    return statistical_f_anova, p_value, rejected_value, hypothesis
+    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()),
+                        np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
+
+    mean_groups, std_dev_groups, std_error_groups = zip(*summary_results)
+    content = {"Groups": names_groups, "Nº Samples": num_samples, "Mean": mean_groups, "Std. Dev.": std_dev_groups,
+               "Std. Error": std_error_groups}
+    summary_results = pd.DataFrame(content)
+    sources = ["Between Groups", "Within Groups", "Total"]
+    df_list = [df_bg, df_wg, num_total - 1]
+    sum_squares = [ss_bg, ss_wg, ss_bg + ss_wg]
+    mean_square = [ms_bg, ms_wg, ms_bg + ms_wg]
+    f_stats = [statistical_f_anova, "", ""]
+    rejected_values = [rejected_value, "", ""]
+    anova_results = {"Source": sources, "Degrees of Freedom (DF)": df_list, "Sum of Squares (SS)": sum_squares,
+                     "Mean Square (MS)": mean_square, "F-Stat": f_stats, "Rejected Value": rejected_values}
+    anova_results = pd.DataFrame(anova_results)
+    
+    return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
 
 
-def anova_within_cases_test(dataset: pd.DataFrame, alpha: float = 0.05):
+def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
+    """
+    Perform a within-subject ANOVA (Analysis of Variance). This type of ANOVA is used when the same subjects are
+    used for each treatment (i.e., the subjects are subjected to repeated measures). This test is beneficial for
+    analyzing the effects of different conditions or treatments on a single group of subjects.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame where each column represents a different condition/treatment for the same subjects. The first 
+        column is typically used for subject identification and is ignored in the analysis.
+    alpha : float, optional
+        The significance level for the test. Default is 0.05.
+
+    Returns
+    -------
+    summary_results : pandas.DataFrame
+        A DataFrame with a summary of each group's mean, standard deviation, and standard error.
+    anova_results : pandas.DataFrame
+        A DataFrame with the ANOVA results, including degrees of freedom, sum of squares, mean square, F-statistic, 
+        and rejected value for different sources of variance (between conditions, between subjects, etc.).
+    statistical_f_anova : float
+        The F-statistic for the ANOVA test. A higher value suggests a significant difference between conditions or treatments.
+    p_value : float
+        The p-value for the hypothesis test (currently not calculated and set to None).
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
+    hypothesis : str
+        A string stating the conclusion of the test based on the F-statistic and alpha.
+
+    Note
+    ----
+    Within-subject ANOVA controls for potential variability among subjects, as each subject serves as their own control. 
+    This test separates the variance due to the interaction between subjects and conditions from the variance due to 
+    differences between conditions and residual variance. It assumes sphericity, which implies that the variances of the 
+    differences between all possible pairs of conditions are equal.
+    """
+
     if dataset.shape[1] < 2:
         raise "Error: Anova Test need at least two samples"
 
@@ -314,7 +273,7 @@ def anova_within_cases_test(dataset: pd.DataFrame, alpha: float = 0.05):
     for i in names_groups:
         sum_groups.append(np.sum(dataset[i]))
         sum_square_groups.append(np.sum(dataset[i] ** 2))
-    sum_s_i = dataset.sum(axis=1)
+    sum_s_i = dataset[names_groups].sum(axis=1)
     sum_x_t = sum(sum_groups)
     sum_x_square_t = sum(sum_square_groups)
 
@@ -322,47 +281,39 @@ def anova_within_cases_test(dataset: pd.DataFrame, alpha: float = 0.05):
     df_bc = num_groups - 1
     ms_bc = ss_bc / df_bc
 
-    # ss_bs = np.sum([i ** 2 / num_groups for i in sum_s_i]) - ((sum_x_t ** 2) / num_total)
-    # df_bs = num_samples[0] - 1
-    # ms_bs = ss_bs / df_bs
+    ss_bs = np.sum([i ** 2 / num_groups for i in sum_s_i]) - ((sum_x_t ** 2) / num_total)
+    df_bs = num_samples[0] - 1
+    ms_bs = ss_bs / df_bs
 
-    ss_res = sum_x_square_t - np.sum([(sum_groups[i] ** 2) / num_samples[i] for i in range(num_groups)]) - np.sum(
-        [i ** 2 / num_groups for i in sum_s_i]) + ((sum_x_t ** 2) / num_total)
+    ss_res = sum_x_square_t - ss_bc - ss_bs
     df_res = (num_samples[0] - 1) * (num_groups - 1)
     ms_res = ss_res / df_res
 
     statistical_f_anova = ms_bc / ms_res
 
-    # TODO Calculate P-Valor F Dist with alpha and df_numerator (df_bc) df_denominator (df_res)
-    # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
     rejected_value = stats.get_cv_f_distribution(df_bc, df_res, alpha=alpha)
-    p_value = None
+    p_value = stats.get_p_value_f(statistical_f_anova, df_bc, df_res)
 
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if statistical_f_anova < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    return statistical_f_anova, rejected_value, p_value, hypothesis
+    summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()),
+                        np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
 
-
-# PRUEBAS UNITARIAS DE LAS FUNCIONES QUITAR ESTO DE AQUI MÁS ADELANTE
-
-
-def test_bartlett():
-    data = pd.read_csv("prueba.csv")
-    levene_test(data)
-
-
-def test_levene():
-    data = pd.read_csv("prueba.csv")
-    levene_test(data)
-
-
-def test_d_agostino_pearson():
-    data = [43, 36, 43, 41, 37, 37, 43, 40]
-    d_agostino_pearson(data)
-
-
-def test_shapiro_wilk():
-    data = [43, 36, 43, 41, 37, 37, 43, 40]
-    shapiro_wilk_normality(data)
+    mean_groups, std_dev_groups, std_error_groups = zip(*summary_results)
+    content = {"Groups": names_groups, "Nº Samples": num_samples, "Mean": mean_groups, "Std. Dev.": std_dev_groups,
+               "Std. Error": std_error_groups}
+    summary_results = pd.DataFrame(content)
+    
+    sources = ["Between Conditions", "Between Subjects", "Residual", "Total"]
+    df_list = [df_bc, df_bs, df_res, df_bc + df_bs + df_res]
+    sum_squares = [ss_bc, ss_bs, ss_res, ss_bc + ss_bs + ss_res]
+    mean_square = [ms_bc, ms_bs, ms_res, ms_bc + ms_bs + ms_res]
+    f_stats = [statistical_f_anova, "", "", ""]
+    rejected_values = [rejected_value, "", "", ""]
+    anova_results = {"Source": sources, "Degrees of Freedom (DF)": df_list, "Sum of Squares (SS)": sum_squares,
+                     "Mean Square (MS)": mean_square, "F-Stat": f_stats, "Rejected Value": rejected_values}
+    anova_results = pd.DataFrame(anova_results)
+     
+    return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
