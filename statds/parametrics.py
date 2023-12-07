@@ -2,7 +2,7 @@ import numpy as np
 import math
 import pandas as pd
 
-import stats
+from . import stats
 
 
 def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):

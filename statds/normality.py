@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-import stats
+from . import stats
 # ANALYTICAL METHODS
 
 

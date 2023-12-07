@@ -14,8 +14,8 @@ from pathlib import Path
 
 # TODO Check imports
 
-import no_parametrics, parametrics, utils
-import normality, homoscedasticity
+from . import no_parametrics, parametrics, utils
+from . import normality, homoscedasticity
 
 current_directory = Path(__file__).resolve().parent
 external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css",

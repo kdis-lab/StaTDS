@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 
-import stats
+from . import stats
 
 
 def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'):

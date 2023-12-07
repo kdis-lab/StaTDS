@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 
-import no_parametrics, parametrics
+from . import no_parametrics, parametrics
 
 try:
     from fpdf import FPDF
