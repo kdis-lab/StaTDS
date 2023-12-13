@@ -1,10 +1,15 @@
-# Statistical Tests for Data Science (StaTDS)
+# ![https://mouredev.com](https://raw.githubusercontent.com/kdis-lab/StaTDS/master/assets/statds.png) Hi, StaTDS is a library for statistical testing and comparison of algorithm results 👋
+## Statistical Tests for Data Science (StaTDS)
 
 StaTDS is a library for mathematicians, scientists, and engineers. It includes various tools to facilitate statistical analysis given a set of data samples. Within this library, you will find a wide range of statistical tests to streamline the process when conducting comparative or sample studies.
 
-Currently, the available statistical tests are:
+![https://github.com/kdis-lab/StaTDS](https://raw.githubusercontent.com/kdis-lab/StaTDS/master/assets/banner-lib.png)
 
-### **Normality**
+[![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCRuhSEuWAKQuCLQmoFim5Hw)](https://www.youtube.com/@StaTDS?sub_confirmation=1) ![GitHub Followers](https://img.shields.io/github/followers/kdis-lab?style=social) ![GitHub Followers](https://img.shields.io/github/stars/kdis-lab/StaTDS?style=social)  ![Pypi download](https://img.shields.io/pypi/dm/statds)
+
+### Available statistical test
+
+#### **Normality**
 
 | Name                        | Function                              |
 |-----------------------------|---------------------------------------|
@@ -13,7 +18,7 @@ Currently, the available statistical tests are:
 | Kolmogorov-Smirnov          | normality.kolmogorov_smirnov          |
 
 
-### **Homoscedasticity**
+#### **Homoscedasticity**
 
 | Name                        | Function                              |
 |-----------------------------|---------------------------------------|
@@ -21,7 +26,7 @@ Currently, the available statistical tests are:
 | Bartlett                    | homoscedasticity.bartlett             |
 
 
-### **Parametrics**
+#### **Parametrics**
 
 | Name                        | Function                              | Type Comparisons |
 |-----------------------------|---------------------------------------|------------------|
@@ -30,7 +35,7 @@ Currently, the available statistical tests are:
 | ANOVA between cases         | parametrics.anova_cases               | Multiple         |
 | ANOVA within cases          | parametrics.anova_within_cases        | Multiple         |
 
-### **Non Parametrics**
+#### **Non Parametrics**
 
 | Name                        | Function                              | Type Comparisons |
 |-----------------------------|---------------------------------------|------------------|
@@ -42,7 +47,7 @@ Currently, the available statistical tests are:
 | Quade                       | no_parametrics.quade                  | Multiple         |
 
 
-#### **Post-hoc**
+##### **Post-hoc**
 
 | Name                        | Function                              |
 |-----------------------------|---------------------------------------|
@@ -56,7 +61,8 @@ Currently, the available statistical tests are:
 | Hommel                      | no_parametrics.hommel                 |
 | Rom                         | no_parametrics.rom                    |
 | Schaffer                    | no_parametrics.shaffer                |
-
+## Developed in:
+![Python](https://img.shields.io/badge/Python-yellow?style=for-the-badge&logo=python&logoColor=white&labelColor=101010)
 
 ## Authors
 
@@ -72,7 +78,7 @@ You can find all documentation in [Documentation Folder](https://github.com/kdis
 
 ## Installation
 
-StaTDS could be downloaded using two different ways: using pip or git as command line or directly from the webpage. 
+StaTDS could be downloaded using two different ways: using pip or git as command line or docker container. 
 
 ### Using Git repository
 The installation process for Git is detailed for each supported operating system in [1]. Additionally, a comprehensive guide on downloading StaTDS is provided. Git can be easily installed on widely used operating systems such as Windows, Mac, and Linux. It is worth noting that Git comes pre-installed on the majority of Mac and Linux machines by default.
@@ -104,5 +110,31 @@ Ensure that Python and pip are correctly installed on your operating system befo
     $ pip install statds[full-app]
     ```
 
+Now, you only need create a python script with next code:
+```python
+from statds import app
+
+app.start_app(port=8050)
+```
+
+Now, you can access to the interface with your Web navigator through the following url: http://localhost:8050
+
+### Using Docker
+
+Firstly, to begin with, it is essential to download the repository from GitHub to obtain the Dockerfile. Before this step, ensure that Docker is installed on your computer [2]. With Docker ready to use, you can build the application's image by executing the following command:
+
+```shell
+docker build -t name-lib ./
+```
+
+After the image has been successfully created, the next step is to instantiate a container using that image.
+ 
+```shell
+docker run -p 8050:8050 --name container name-lib
+```
+
+Now, you can access to the interface with your Web navigator through the following url: http://localhost:8050
+
 ## References
 [1] 1.5 getting started - installing git. Git. (n.d.). https://git-scm.com/book/en/v2/Getting-Started-Installing-Git 
+[2] Get Docker — Docker Docs. Docker Inc. 2023. url: https://docs.docker.com/get-docker
