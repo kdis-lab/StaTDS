@@ -17,3 +17,9 @@ This section presents a comparative analysis of four regression algorithms: Rand
 -------------------------------------------------------------------------------------------------------------------
 
 In this tutorial, we compare three clustering algorithms: K-Means, Agglomerative Clustering, and DBSCAN, with an emphasis on Silhouette Score and Davies-Bouldin Score as evaluation metrics. We implement various tests to assess the performance of these algorithms over ten datasets.
+
+
+`StaTDS Tutorial: Association Rule Mining <https://drive.google.com/file/d/17LgUCNTCsxLCK4X3cwzytXG9WjPOURgX/view?usp=sharing>`_
+--------------------------------------------------------------------------------------------------------------------------------
+
+This Jupyter notebook presents a comparison of two well-known algorithms for mining association rules: Apriori and FP-Growth. The algorithms are compared in terms of runtime (the lower the better) for a varied set of datasets. The notebook includes some specific parts implemented by pandas (dataset loading) and mlxtend (association rule mining algorithms) that do not belong to StaTDS and could be done with other different libraries.
