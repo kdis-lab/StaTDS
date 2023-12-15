@@ -106,8 +106,21 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     std_wilcoxon = math.sqrt((num_problems * (num_problems + 1) * ((2 * num_problems) + 1)) / 24.0)
     z_wilcoxon = (w_wilcoxon - mean_wilcoxon) / std_wilcoxon
 
+
+    # Se debe de utilizar las tablas con los valores críticos
+
+    cv_alpha_selected = stats.get_cv_willcoxon(num_problems, alpha)
+
+    # print(f"Critical Value with alpha {alpha} and {num_problems} problems -> {cv_alpha_selected}, stadistic: "
+    #       f"{w_wilcoxon}")
+
+    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    if w_wilcoxon <= cv_alpha_selected:
+        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+
+    p_value = None
+
     if num_problems > 25:
-        # Se puede aproximar a una N(0,1)
         p_value = stats.get_p_value_normal(z_wilcoxon)
 
         # print(f"p_value {p_value}, Stadistic: {w_wilcoxon}, Z_wilcoxon {z_wilcoxon}")
@@ -115,21 +128,7 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
         if p_value < alpha:
             hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
-        return w_wilcoxon, None, p_value, hypothesis
-
-    else:
-        # Se debe de utilizar las tablas con los valores críticos
-
-        cv_alpha_selected = stats.get_cv_willcoxon(num_problems, alpha)
-
-        # print(f"Critical Value with alpha {alpha} and {num_problems} problems -> {cv_alpha_selected}, stadistic: "
-        #       f"{w_wilcoxon}")
-
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-        if cv_alpha_selected < w_wilcoxon:
-            hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-
-        return w_wilcoxon, cv_alpha_selected, None, hypothesis
+    return w_wilcoxon, cv_alpha_selected, p_value, hypothesis
 
 
 def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
@@ -339,30 +338,40 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
     stadistic_friedman = (((12 / (num_cases * num_algorithm * (num_algorithm + 1))) * ranks_sum) - 3 * num_cases *
                           (num_algorithm + 1))
 
-    hypothesis_state = False
+    hypothesis_state = True
     if verbose:
         print(df)
     rankings_with_label = {j: i / num_cases for i, j in zip(ranks, columns_names[1:])}
 
-    # Revisar esta parte
     if num_cases > 15 or num_algorithm >= 3:
         # P-value = P(chi^2_{k-1} >= Q)
-        # Cargamos la tabla estadística
         reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm-1, alpha)
-        if stadistic_friedman < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
-            hypothesis_state = True
+        if reject_value[0] < alpha:
+            hypothesis_state = False
     else:
-        # No se puede usar la chi^2, debemos de usar las tablas de la distribución Q
         reject_value = [None, stats.get_cv_q_distribution(num_cases, num_algorithm-1, alpha)]
-        if stadistic_friedman < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
-            hypothesis_state = True
-    # Interpret
+        if stadistic_friedman <= reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
+            hypothesis_state = False
+
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if hypothesis_state:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
     return rankings_with_label, stadistic_friedman, reject_value[0], reject_value[1], hypothesis
 
+
+def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    rankings_with_label, stadistic_friedman, p_value, cv_test, hypothesis = friedman(dataset, alpha, criterion, verbose)
+
+    columns_names = list(dataset.columns)
+    num_cases, num_algorithm = dataset.shape
+    num_algorithm -= 1
+
+    f_f = ((num_cases - 1) * stadistic_friedman) / (num_cases * (num_algorithm -1) * stadistic_friedman)
+
+    p_value = get_p_value_f(f_f, num_algorithm-1, (num_algorithm -1)*(num_cases*num_algorithm))
+
+    return f_f, p_value
 
 def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
@@ -446,19 +455,19 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
         print(stadistic_friedman)
         print(f"Rankings {ranks_j}")
 
-    hypothesis_state = False
+    hypothesis_state = True
 
     if num_cases > 15 or num_algorithm > 4:
         # P-value = P(chi^2_{k-1} >= Q)
         # Cargamos la tabla estadística
         reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm - 1, alpha)
-        if stadistic_friedman < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
-            hypothesis_state = True
+        if reject_value[0] < alpha:
+            hypothesis_state = False
     else:
         # No se puede usar la chi^2, debemos de usar las tablas de la distribución Q
         reject_value = [None, stats.get_cv_q_distribution(num_cases, num_algorithm-1, alpha)]
-        if stadistic_friedman < reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
-            hypothesis_state = True
+        if stadistic_friedman <= reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
+            hypothesis_state = False
 
     # Interpret
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
@@ -549,17 +558,17 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
     stadistic_a = ((num_cases * (num_cases + 1) * (2*num_cases + 1) * num_algorithm * (num_algorithm + 1) *
                     (num_algorithm-1)) / 72)
     stadistic_b = sum(s ** 2 for s in relative_size_to_algorithm) / float(num_cases)
-    hypothesis_state = False
+    hypothesis_state = True
     stadistic_quade = None
     if stadistic_a - stadistic_b > 0.0000000001:
         stadistic_quade = (num_cases - 1) * stadistic_b / (stadistic_a - stadistic_b)
-        reject_value = stats.get_p_value_f(stadistic_quade, num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1))
-        if stadistic_quade < reject_value:  # valueFriedman < p(alpha >= chi^2)
-            hypothesis_state = True
-        reject_value = [reject_value, None]
+        p_value = stats.get_p_value_f(stadistic_quade, num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1))
+        if p_value < alpha:  # valueFriedman < p(alpha >= chi^2)
+            hypothesis_state = False
+        reject_value = [p_value, None]
     else:
         p_value = math.pow((1 / float(math.factorial(num_algorithm))), num_cases - 1)
-        hypothesis_state = True if p_value >= alpha else False
+        hypothesis_state = False if p_value < alpha else True
         reject_value = [p_value, None]
 
     # Si A = B se considera un región critical en la distribución estadística, y se calcula el p-valor como (1/k!)^n-1

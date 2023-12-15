@@ -44,14 +44,17 @@ available_test_two_groups = {"Wilcoxon": no_parametrics.wilconxon,
                              "T-Test unpaired": parametrics.t_test_unpaired
                              }
 
-available_post_hoc = {"Nemenyi": no_parametrics.nemenyi,
-                      "Bonferroni": no_parametrics.bonferroni,
-                      "Holm": no_parametrics.holm,
-                      "Finner": no_parametrics.finner,
-                      "Hochberg": no_parametrics.hochberg,
-                      "Schaffer": no_parametrics.shaffer,
-                      "Li": no_parametrics.li
-                      }
+available_post_hoc = { "Nemenyi": no_parametrics.nemenyi,
+                       "Bonferroni": no_parametrics.bonferroni,
+                       "Li": no_parametrics.li,
+                       "Holm": no_parametrics.holm,
+                       "Holland": no_parametrics.holland,
+                       "Finner": no_parametrics.finner,
+                       "Hochberg": no_parametrics.hochberg,
+                       "Hommel": no_parametrics.hommel,
+                       "Rom": no_parametrics.rom,
+                       "Schaffer": no_parametrics.shaffer
+                       }
 
 parametrics_test = ["T-Test paired", "T-Test unpaired", "ANOVA between cases", "ANOVA within cases"]
 

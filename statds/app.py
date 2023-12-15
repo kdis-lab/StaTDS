@@ -12,8 +12,6 @@ from datetime import datetime
 import multiprocessing
 from pathlib import Path
 
-# TODO Check imports
-
 from . import no_parametrics, parametrics, utils
 from . import normality, homoscedasticity
 
@@ -635,6 +633,7 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
         {'label': "Bonferroni", 'value': "Bonferroni"},
         {'label': "Li", 'value': "Li"},
         {'label': "Holm", 'value': "Holm"},
+        {'label': "Holland", 'value': "Holland"},
         {'label': "Finner", 'value': "Finner"},
         {'label': "Hochberg", 'value': "Hochberg"},
         {'label': "Hommel", 'value': "Hommel"},
@@ -1226,4 +1225,4 @@ def start_app(host: str = '127.0.0.1', port: int = 8050):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=9050, debug=False)
