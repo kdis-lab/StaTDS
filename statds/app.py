@@ -266,7 +266,7 @@ def generate_home_page(dataframe: pd.DataFrame):
                                 "Source on Github"], href="https://github.com/kdis-lab/StaTDS",
                                className="button", color="secondary", outline=True),
                     dbc.Button([html.Img(src='assets/images/logo-python.png', className="icon_button"),
-                                "Python Doc"], href="https://github.com/kdis-lab/StaTDS", className="button",
+                                "Python Doc"], href="https://statds.readthedocs.io/en/latest/", className="button",
                                color="secondary", outline=True),
                     ]),
             ], className="p-4"),
@@ -456,12 +456,27 @@ def create_test_form(columns: list, title: str, test_two_groups: list, test_mult
                    "with the specific dataset and if one demonstrates consistently better "
                    "performance across different contexts."),
             html.H3("Parametrics Test"),
-            html.H5("T-test paired"),
-            html.H5("T-test unpaired"),
+            html.H5("T-test"),
+            dcc.Markdown('''The t-test, commonly referred to as Student's t-test, is tailor-made for assessing the disparities in average values between two groups. It examines the null hypothesis that two correlated or repeated samples share the same mean values. 
+                The test determines if there is a significant difference in average scores between the samples. It is applicable to: **Paired data:** the data values of each group are related. **Unpaired data:** the data values of each group are independent.            
+            ''', mathjax=True),
             html.H3("Non-Parametrics Test"),
             html.H5("Wilcoxon"),
+            dcc.Markdown('''The Wilcoxon signed-ranks test is a non-parametric alternative to the paired t-test, which ranks the differences in performances of
+                        two samples for each data set, ignoring the signs and compares the ranks
+                        for the positive and the negative differences''', mathjax=True),
             html.H5("Binomial Sign"),
-            html.H5("Mann-Whitney-U"),],
+            dcc.Markdown('''The Binomial Sign Test evaluates the null hypothesis asserting that two related paired samples 
+                originate from an identical distribution. Unlike other tests, it does not presuppose symmetry in the data. 
+                However, it is generally considered to be less robust compared to the Wilcoxon test''', mathjax=True),
+            html.H5("Mann-Whitney-U"),
+            dcc.Markdown('''In statistics, the Mann–Whitney U test (also known as the Mann–Whitney–Wilcoxon (MWW/MWU)) is a 
+                non-parametric test of the null hypothesis that for randomly selected values X and Y from two populations, 
+                the probability of X being greater than Y is equal to the probability of Y being greater than X. It is an 
+                alternative to the t-test for independent samples when the data do not meet the requirements of normality 
+                and homogeneity of variances required by the t-test. 
+                ''')
+            ],
                                  style={"overflow-y": "scroll", "height": "30em"}  # Ajusta la altura según necesites
         ),
     ]
@@ -470,27 +485,92 @@ def create_test_form(columns: list, title: str, test_two_groups: list, test_mult
         dbc.PopoverBody([
             html.P("It allows determining if various algorithms behave similarly across multiple data sets."),
             html.H3("Parametrics Test"),
-            html.H5("ANOVA between cases"),
-            html.H5("ANOVA within cases"),
+            html.H5("ANOVA"),
+            dcc.Markdown('''Anova examines the null hypothesis that the average outcomes of two or more groups are equivalent. The test scrutinizes both the variability among the groups 
+                and the internal variation within them using variance analysis. The statistical measure used in the ANOVA test is derived from the f-distribution.
+                '''),
             html.H3("Non-Parametrics Test"),
             html.H5("Friedman"),
+            dcc.Markdown('''The Friedman Test is a non-parametric statistical method used for comparing and ranking multiple data sets. It calculates rankings for each set and evaluates the results using a chi-squared distribution. The degrees of freedom for this distribution are determined by $$K−1$$, where $$K$$ represents the number of related variables, such as the number of algorithms being compared. ''', mathjax=True),
             html.H5("Friedman Aligned Ranks"),
+            dcc.Markdown('''Friedman's Aligned Ranks Test, an extension of the Friedman Test, also compares and assigns rankings across all data sets. This test is particularly useful when dealing with a smaller number of algorithms in the comparison. It provides a more comprehensive view by considering the collective performance of all sets.''', mathjax=True),
             html.H5("Quade"),
-            html.H3("Post-hcc"),
+            dcc.Markdown('''The Quade Test, while similar in function to the Iman-Davenport Test, incorporates a unique aspect. It accounts for the varying difficulty levels of problems or for the more pronounced discrepancies in results obtained from different algorithms. This is achieved through a weighting process, which adds an extra layer of analysis, especially beneficial in scenarios where algorithms perform inconsistently across different types of problems.''', mathjax=True),
+            html.H3("Post-hoc"),
             html.P("Once a Multiple Comparisons analysis has been performed, if significant differences arise after "
                    "concluding, post-hoc tests are necessary. Post-hoc tests determine where our differences come from,"
                    " and it is possible to consider a comparison among all pairs of algorithms or a comparison between "
                    "a control algorithm and the rest."),
             html.H5("Bonferroni-Dunn"),
+            dcc.Markdown('''
+                            The Bonferroni-Dunn test is a one-step method that adjusts the $$\\alpha$$ value based on the number of comparisons, using the formula $$\\alpha' = \\alpha/K$$, where $$K$$ represents the number of comparisons.
+                            * For a comparison against a control: $$K = k-1$$
+                            * For an all pairs comparison: $$K = k(k-1)/2$$
+                        ''', mathjax=True), 
             html.H5("Holm"),
+            dcc.Markdown('''
+                            The Holm test operates as a step-down procedure, systematically adjusting the value of $$\\alpha$$. Begin by ordering the p-values from smallest to largest: $$p_1 \\leq p_2 \\leq ... \\leq p_{k-1}$$. Correspondingly, assign these to hypotheses $$H_1, H_2, ..., H_{k-1}$$. In the Holm procedure:
+                            * Initiate with the most significant p-value.
+                            * Reject $H_1$ if $p_1$ is less than $\\alpha / (k-1)$. After which, evaluate $p_2$ against $\\alpha / (k-2)$.
+                            * Continue this method sequentially. If, for instance, the second hypothesis is rejected based on its p-value, move to the third hypothesis.
+                            * The process stops when we retain a null hypothesis. We also keep all subsequent without further testing.
+                        ''', mathjax=True), 
             html.H5("Holland"),
+            dcc.Markdown('''
+                            Holland test also adjust the value of $$\\alpha$$ in a step-down manner, as Holm'm method does. Begin by ordering the p-values from smallest to largest: $$p_1 \\leq p_2 \\leq ... \\leq p_{k-1}$$. Correspondingly, assign these to hypotheses $$H_1, H_2, ..., H_{k-1}$$. In the Holland procedure:
+                            * Initiate with the most significant p-value.
+                            * Reject $H_1$ if $p_1$ is less than $1 - (1-\\alpha)^{k-1}$. After which, evaluate $p_2$ against $1 - (1-\\alpha)^{k-2}$.
+                            * Continue this method sequentially. If, for instance, the second hypothesis is rejected based on its p-value, move to the third hypothesis.
+                            * The process stops when we retain a null hypothesis. We also keep all subsequent without further testing.
+                        ''', mathjax=True), 
             html.H5("Finner"),
+            dcc.Markdown('''
+                            Finner test is similar to Holm and also adjusts the value of $$\\alpha$$ in a step-down manner. In the Finner procedure:
+                            * Initiate with the most significant p-value.
+                            * Reject $$H_1$$ if $$p_1$$ is less than $$1 - (1-\\alpha)^{(k-1)/i}$$. After which, evaluate $$p_2$$ against $$\\alpha / (k-2)$$.
+                            * Continue this method sequentially. If, for instance, the second hypothesis is rejected based on its p-value, move to the third hypothesis.
+                            * The process stops when we retain a null hypothesis. We also keep all subsequent without further testing.
+                        ''', mathjax=True),
             html.H5("Hochberg"),
+            dcc.Markdown('''
+                            Finner test is similar to Holm and also adjusts the value of $$\\alpha$$ in a step-down manner. In the Finner procedure:
+                            * Initiate with the most significant p-value.
+                            * Reject $$H_1$$ if $$p_1$$ is less than $$1 - (1-\\alpha)^{(k-1)/i}$$. After which, evaluate $$p_2$$ against $$\\alpha / (k-2)$$.
+                            * Continue this method sequentially. If, for instance, the second hypothesis is rejected based on its p-value, move to the third hypothesis.
+                            * The process stops when we retain a null hypothesis. We also keep all subsequent without further testing.
+                        ''', mathjax=True),
             html.H5("Hommel"),
+            dcc.Markdown('''
+                            The Hommel procedure is acknowledged to be more intricate in terms of both computation and comprehension. Essentially, it requires identifying the greatest value of $$j$$ such that for every $$k$$ ranging from 1 to $$j$$, the condition $$p_{n-j+k} > k\\alpha/j$$. In the case that such a $$j$$ does not exist, we can reject all hypotheses, otherwise we reject all for which $$p_i \\leq \\alpha/j$$.  
+                        ''', mathjax=True),
             html.H5("Rom"),
+            dcc.Markdown('''
+                           Rom test is a modification to Hochberg test to increase its power. This test changes the way alpha is adjusted.
+                           $$
+                             \\alpha_{k-i} = \\left[ \\sum_{j=1}^{i-1} \\alpha^j - \\sum_{j=1}^{i-2} \\binom{i}{k} \\alpha^{i-j}_{k-1-j} \\right]/i
+                           $$
+                        ''', mathjax=True),
             html.H5("Li"),
+            dcc.Markdown('''
+                            The Li test proposed a two-step rejection procedure:
+                            * Step 1: Reject all $H_i$ if $p_{k-1} \\leq \\alpha$. Otherwise, accept the hypothesis associated to $p_{k-1}$ and go to Step 2.
+                            * Step 2: Reject any remaining $H_i$ with $p_i \\leq (1-p{k-1})/(1-\\alpha)\\alpha$
+                        ''', mathjax=True),
             html.H5("Shaffer"),
-            html.H5("Nemenyi"),],
+            dcc.Markdown('''
+                            This test is like Holm's but each p-value associated with the hypothesis  $$H_i$$  is compared as  $$p_i \\leq \\frac{\\alpha}{t_i}$$, where  $$t_i$$
+                            is the maximum number of possible hypothesis assuming that the previous  $$(j−1)$$
+                            hypothesis have been rejected.
+                        ''', mathjax=True),
+            html.H5("Nemenyi"),
+            dcc.Markdown('''
+                            Nemenyi test is similar to the Tukey test for ANOVA and is used when all classifiers are compared to each other. 
+                            The performance of two classifiers is significantly different if the corresponding average ranks differ by at least 
+                            the critical difference where critical values:
+                            $$
+                            CD = q_{\\alpha}\\sqrt{\\frac{k(k+1)}{6N}}
+                            $$
+                        ''', mathjax=True),],
             style={"overflow-y": "scroll", "height": "30em"}  # Ajusta la altura según necesites
         ),
     ]
@@ -532,8 +612,23 @@ def create_norm_form(title: str, test_two_groups: list, test_multiple_groups: li
             f(x) = \\frac{1}{\\sigma \\sqrt{2\\pi}} e^{-\\frac{1}{2}(\\frac{x - \\mu}{\\sigma})^2} $$ ''',
                          mathjax=True),
             html.H5("Shapiro-Wilk"),
+            dcc.Markdown('''
+                This test examines the null hypothesis that a population that follows a normal distribution
+                produces a sample $$x_1, x_2, ..., x_n$$. Researchers introduced the Shapiro-Wilk test in 1965. 
+                It calculates a W statistic to determine if a random sample, $$x_1, x_2, ..., x_n$$, originates from a normal distribution.
+                ''',
+                         mathjax=True),
             html.H5("D’Agostino-Pearson / Omnibus Tets"),
-            html.H5("Kolmogorov-Smirnov")],
+            dcc.Markdown('''The procedure evaluates the null hypothesis, positing that samples derive from a normally 
+                distributed population. This test combines both the skewness coefficient—which denotes symmetry and typically has 
+                a value of 0 for a normal distribution—and the kurtosis coefficient, which measures peakedness and is usually 0 
+                for a normal distribution. ''', mathjax=True),
+            html.H5("Kolmogorov-Smirnov"),
+            dcc.Markdown(''' This method adjusts the mean and variance
+                of the benchmark distribution to match the sample’s estimates. However,
+                using these standards to define the reference distribution changes the fundamental distribution of the test’s statistics. Despite these modifications,
+                many studies suggest the test is less precise in identifying normality than the
+                Shapiro–Wilk or D’Agostino-Pearson tests.''', mathjax=True)],
             style={"overflow-y": "scroll", "height": "30em"})]
 
     info_homoscedasticity_test = [
@@ -542,7 +637,18 @@ def create_norm_form(title: str, test_two_groups: list, test_multiple_groups: li
             html.P("Homoscedasticity refers to the assumption that the variances across the data are equal or "
                    "'homogeneous', an essential consideration in parametrics tests."),
             html.H5("Levene"),
-            html.H5("Bartlett")],
+            dcc.Markdown('''Levene’s test is a statistical method used for for checking if 
+                multiple samples share the same “spread” or variance. To clarify, if one class’s
+                scores are all over the place and another’s are tightly clustered, your comparisons might be biased. That is where ‘homogeneity of variance’ comes in,
+                ensuring a level playing field. For instance, the analysis of variance (ANOVA)
+                relies on the fundamental assumption that the variances among the different
+                groups or samples are equal. If this assumption does not hold, the ANOVA
+                results might be misleading or inaccurate.''', mathjax=True),
+            html.H5("Bartlett"),
+            dcc.Markdown(''' Bartlett’s test is used to test if k samples have equal variances. It is more sensitive than Levene to depart from normality. If you have
+                strong evidence that your data do come from a normal, or nearly normal,
+                distribution, then Bartlett’s test has better performance.
+                ''', mathjax=True)],
             style={"overflow-y": "scroll", "height": "30em"})]
 
     return html.Div([
