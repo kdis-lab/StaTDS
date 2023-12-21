@@ -1,4 +1,4 @@
-# ![https://mouredev.com](https://raw.githubusercontent.com/kdis-lab/StaTDS/master/assets/statds.png) Hi, StaTDS is a library for statistical testing and comparison of algorithm results 👋
+# ![https://github.com/kdis-lab/StaTDS](https://raw.githubusercontent.com/kdis-lab/StaTDS/master/assets/statds.png) Hi, StaTDS is a library for statistical testing and comparison of algorithm results 👋
 ## Statistical Tests for Data Science (StaTDS)
 
 StaTDS is a library for mathematicians, scientists, and engineers. It includes various tools to facilitate statistical analysis given a set of data samples. Within this library, you will find a wide range of statistical tests to streamline the process when conducting comparative or sample studies.
@@ -73,7 +73,7 @@ StaTDS is a library for mathematicians, scientists, and engineers. It includes v
 
 
 ## Documentación
-You can find all documentation in [Documentation Folder](https://github.com/kdis-lab/StaTDS) or [Web Docs](https://github.com/kdis-lab/StaTDS).
+You can find all documentation in [Documentation Folder](https://github.com/kdis-lab/StaTDS), [Web Docs](https://github.com/kdis-lab/StaTDS) or [Youtube Channel](https://www.youtube.com/@StaTDS).
 
 
 ## Installation

@@ -361,6 +361,45 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
 
 
 def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    """
+    Perform the Iman-Davenport test, a non-parametric statistical test that is a modification of the Friedman test.
+    This test is used when comparing more than two treatments or conditions across multiple blocks or subjects. 
+    Unlike the Friedman test, the Iman-Davenport test converts the Friedman statistic into an F-distribution 
+    providing a better approximation in certain cases, especially when dealing with small sample sizes.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        A DataFrame with the first column as the block or subject identifier and the remaining
+        columns as different treatments or conditions.
+    alpha : float, optional
+        The significance level for the test, default is 0.05.
+    criterion : bool, optional
+        Determines the direction for ranking the observations. If False, ranks are in
+        ascending order; if True, in descending order.
+    verbose : bool, optional
+        If True, prints the detailed results table including ranks.
+
+    Returns
+    -------
+    rankings_with_label : dict
+        A dictionary with the average ranks of each treatment or condition.
+    statistic_iman_davenport : float
+        The Iman-Davenport test statistic, which follows an F-distribution under the null
+        hypothesis.
+    reject_value : tuple
+        A tuple containing the critical value for the test and the p-value (if applicable).
+    hypothesis : str
+        A string stating the conclusion of the test based on the test statistic, critical value, and
+        alpha.
+
+    Note
+    ----
+    The Iman-Davenport test is particularly useful in cases where the assumptions of the Friedman test are 
+    not fully met or when a more sensitive analysis is required. It is especially effective in small sample sizes 
+    and is robust against non-normal distributions, similar to the Friedman test. However, it provides a more 
+    accurate approximation to the F-distribution, making it preferable in certain statistical analyses.
+    """
     rankings_with_label, stadistic_friedman, p_value, cv_test, hypothesis = friedman(dataset, alpha, criterion, verbose)
 
     columns_names = list(dataset.columns)
