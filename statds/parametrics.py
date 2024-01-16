@@ -53,10 +53,8 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
 
     statistical_t = mean_samples / standard_error_of_the_mean
 
-    # TODO Calculate P-Valor T Distribution with alpha, degrees_of_freedom = num_samples - 1 (Revisar tras hablar)
-
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
-    p_value = None
+    p_value = stats.get_p_value_t(statistical_t, num_samples - 1)
 
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if statistical_t < rejected_value:
@@ -118,9 +116,8 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
 
     statistical_t = np.mean(dataset[names_groups[0]]) - np.mean(dataset[names_groups[1]]) / std_of_the_mean_value
 
-    # TODO Calculate P-Valor T Distribution with alpha, degrees_of_freedom = num_samples - 1 (Revisar tras hablar)
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
-    p_value = None
+    p_value = stats.get_p_value_t(statistical_t, num_samples - 1)
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if statistical_t < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
