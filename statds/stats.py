@@ -190,7 +190,7 @@ def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
     selected_df = min(available_df, key=lambda num: abs(num - k_degrees_of_freedom))
     cv_to_alpha = float(chi_table[chi_table.DF == selected_df][str(selected_alpha)].iloc[0])
 
-    p_value = 1 - calcular_cdf_chi2(z_value, k_degrees_of_freedom)
+    p_value = 2 * calcular_pdf_chi2(z_value, k_degrees_of_freedom)
 
     return p_value, cv_to_alpha
 
@@ -495,6 +495,29 @@ def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
         c *= k / (k - 0.5)
         k += 1
     return 1 - a + c
+
+
+def get_p_value_t(z_value: float, k_degrees_of_freedom: int):
+    """
+    Calculate the t value for a given z-value and degrees of freedom.
+
+    Parameters
+    ----------
+    z_value : float
+        The z-value for which the chi-squared value is calculated.
+    k_degrees_of_freedom : int
+        The degrees of freedom for the chi-squared calculation.
+
+    Returns
+    -------
+    float
+        The t value.
+    """
+
+    numerator = math.gamma((nu + 1) / 2) 
+    denominator = (np.sqrt(nu * np.pi) * math.gamma(nu / 2) * ((1 + (x**2) / nu) ** ((nu + 1) / 2))) 
+    result = numerator / denominator 
+    return 2 * result
 
 
 def chi_sq(z_value: float, k_degrees_of_freedom: int):
