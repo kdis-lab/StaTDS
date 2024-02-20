@@ -406,9 +406,9 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
     num_cases, num_algorithm = dataset.shape
     num_algorithm -= 1
 
-    f_f = ((num_cases - 1) * stadistic_friedman) / (num_cases * (num_algorithm -1) * stadistic_friedman)
+    f_f = ((num_cases - 1) * stadistic_friedman) / (num_cases * (num_algorithm -1) - stadistic_friedman)
 
-    p_value = get_p_value_f(f_f, num_algorithm-1, (num_algorithm -1)*(num_cases*num_algorithm))
+    p_value = stats.get_p_value_f(f_f, num_algorithm-1, (num_algorithm -1)*(num_cases-1))
 
     return f_f, p_value
 

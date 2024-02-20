@@ -494,7 +494,7 @@ def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
     while k <= (df_denominator - 1) / 2.0:
         c *= k / (k - 0.5)
         k += 1
-    return 1 - a + c
+    return abs(1 - a + c)
 
 
 def get_p_value_t(z_value: float, k_degrees_of_freedom: int):

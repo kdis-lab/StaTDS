@@ -8,6 +8,7 @@ import inspect
 import io
 import base64
 from datetime import datetime
+from flask import Flask
 
 import multiprocessing
 from pathlib import Path
@@ -16,9 +17,16 @@ from . import no_parametrics, parametrics, utils
 from . import normality, homoscedasticity
 
 current_directory = Path(__file__).resolve().parent
-external_stylesheets = [dbc.themes.BOOTSTRAP, "assets/app/style.css",
+external_stylesheets = [dbc.themes.BOOTSTRAP, "app/style.css",
                         'https://use.fontawesome.com/releases/v5.8.1/css/all.css']
-app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+import os
+server = Flask(__name__)
+server.secret_key ='test'
+my_root=os.getenv("WSGI_APPURL", "") + "/"
+my_root=os.getenv("DASH_REQUESTS_PATHNAME_PREFIX", my_root)
+#assets_path = os.getcwd() +'/assets'
+# app = Dash(__name__, server = server, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True, url_base_pathname=my_root)
+app = Dash(__name__, server = server, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 app.title = 'StaTDS: Statistical Tests for Data Science'
 app._favicon = "images/logo-StaTDS.png" 
 # suppress_callback_exceptions=True Esto no es una buena práctica pero es la única forma de mantener el control dinámico
@@ -51,10 +59,10 @@ def generate_text_sample():
 
 def generate_navigator_menu():
     menus_2 = [
-                {"title": html.Img(src="assets/images/logo-StaTDS-without-background.png", style={"width": "5em",
+                {"title": html.Img(src="https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-StaTDS-without-background.png", style={"width": "5em",
                                                                                                   "height": "5em"}),
                  "href": "home", "icon": "mdi:home-outline", "className": "logo-menu"},
-                {"title": html.Img(src="assets/images/logo-kdislab.png", style={"width": "4.25em", "height": "2em",
+                {"title": html.Img(src="https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-kdislab.png", style={"width": "4.25em", "height": "2em",
                                                                                 "margin-top": "1.55em",
                                                                                 "margin-left": "0.425em"
                                                                                 }),
@@ -203,26 +211,26 @@ def generate_home_page(dataframe: pd.DataFrame):
          "description": "graduated in Computer Science with honors at the University of Córdoba (Spain) in 2023. He "
                         "is currently studying the Master's Degree in Research in Artificial Intelligence | AEPIA, "
                         "while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group.",
-         "email": "i82luesc@uco.es", "image": "assets/images/i82luesc.png"},
+         "email": "i82luesc@uco.es", "image": "https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/i82luesc.png"},
         {"title": "Antonio Rafael Moya Martín-Castaño",
          "description": "is currently a Substitute Professor of Computing Sciences and Numerical Analysis at the University " 
                         "of Córdoba, while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. "
                         "His research specializes in hyper-parameter Optimization in Machine Learning models, focusing on deep "
                         "learning models in this task",
-         "email": "amoya@uco.es", "image": "assets/images/amoya.png"},
+         "email": "amoya@uco.es", "image": "https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/amoya.png"},
         {"title": "José María Luna Ariza",
          "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of Córdoba,"
                         " while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. Is "
                         "the author of ‘Pattern Mining with Evolutionary Algorithms’ His research specializes in patern"
                         " mining, particularly in patterns in flexible data.",
-         "email": "jmluna@uco.es", "image": "assets/images/jmluna.png"},
+         "email": "jmluna@uco.es", "image": "https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/jmluna.png"},
         {"title": "Sebastián Ventura Soto",
          "description": "is a Professor of Computing Sciences and Artificial Intelligence at the University of "
                         "Córdoba. His teaching is devoted to computer programming, artificial intelligence, "
                         "and data mining in undergraduate and graduate (doctoral) studies. His research lab is "
                         "developed as head of the Knowledge Discovery and Intelligent Systems (KDIS) research group, "
                         "and it is focused on computational intelligence, data science, and their applications.",
-         "email": "sventura@uco.es", "image": "assets/images/sventura.png"},
+         "email": "sventura@uco.es", "image": "https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/sventura.png"},
     ]
 
     row_authors = [dbc.Row([
@@ -259,13 +267,13 @@ def generate_home_page(dataframe: pd.DataFrame):
 
             html.Div([
                 dbc.ButtonGroup([
-                    dbc.Button([html.Img(src='assets/images/logo-send-email.png', className="icon_button"),
+                    dbc.Button([html.Img(src='https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-send-email.png', className="icon_button"),
                                 "Contact email"], href="mailto:i82luesc@uco.es?cc=sventura@uco.es&subject=StaTDS",
                                className="button", color="secondary", outline=True),
-                    dbc.Button([html.Img(src='assets/images/logo-github.png', className="icon_button"),
+                    dbc.Button([html.Img(src='https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-github.png', className="icon_button"),
                                 "Source on Github"], href="https://github.com/kdis-lab/StaTDS",
                                className="button", color="secondary", outline=True),
-                    dbc.Button([html.Img(src='assets/images/logo-python.png', className="icon_button"),
+                    dbc.Button([html.Img(src='https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-python.png', className="icon_button"),
                                 "Python Doc"], href="https://statds.readthedocs.io/en/latest/", className="button",
                                color="secondary", outline=True),
                     ]),
@@ -373,7 +381,7 @@ def change_example(separator):
 
 
 @app.callback(Output('import-button', 'n_clicks'),
-              Output('user-data', 'data'),
+               Output('user-data', 'data'),
               Output("import-Data", "n_clicks"),
               Output('url', 'pathname'),
               Input('import-button', 'n_clicks'),
@@ -382,14 +390,15 @@ def change_example(separator):
               State("import-Data", "n_clicks"),
               State('user-data', 'data'))
 def import_data(n_clicks, textarea_value, separator, n_clicks_modal, current_session):
+    global my_root
     if n_clicks is None:
         return dash.no_update
 
     if n_clicks:
         dataframe = pd.read_csv(io.StringIO(textarea_value), sep=separator)
-        return None, dataframe.to_dict(), n_clicks_modal + 1, "/"
+        return None, dataframe.to_dict(), n_clicks_modal + 1, my_root
 
-    return None, current_session, n_clicks_modal, "/"
+    return None, current_session, n_clicks_modal, my_root
 
 
 def generate_alpha_form(multiple_alpha: bool = False, switch_selector: bool = True):
@@ -758,9 +767,9 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
         {'label': "Bartlett", 'value': "Bartlett"}
     ]
 
-    if pathname in ['/home', "/"]:
+    if pathname in [my_root+"home", my_root]:
         return html.Div(home_page(dataframe))
-    elif pathname == "/data_analysis":
+    elif pathname == my_root + "data_analysis":
         title = "Statistical study"
         return html.Div([
             left_block_experiments(columns, title, two_groups_test_no_parametrics + two_groups_test_parametrics,
@@ -768,7 +777,7 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
                                    post_hoc_no_parametrics, user_experiments, multi_alpha=True),
             right_block(dataframe, "results_experiments"),
         ], style={'display': 'flex'})
-    elif pathname == "/normality_homoscedasticity":
+    elif pathname == my_root + "normality_homoscedasticity":
         title = "Normality & Homoscedasticity"
         return html.Div([
             left_block_test(title, test_normality, test_homocedasticity),
@@ -1328,6 +1337,10 @@ def download_report(n_clicks, name_file):
 
 def start_app(host: str = '127.0.0.1', port: int = 8050):
     app.run(debug=False, port=port, host=host)
+
+
+def get_app():
+    return app
 
 
 if __name__ == '__main__':
