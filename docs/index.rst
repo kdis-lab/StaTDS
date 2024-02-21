@@ -23,8 +23,8 @@ In detail, the package provide:
    
 **Homoscedasticity Test**:
 ++++++++++++++++++++++++++
-   - Levene. :func:`statds.homoscedasticity.levene`
-   - Bartlett. :func:`statds.homoscedasticity.bartlett`
+   - Levene. :func:`statds.homoscedasticity.levene_test`
+   - Bartlett. :func:`statds.homoscedasticity.bartlett_test`
 
 **Parametrics Test**:
 +++++++++++++++++++++

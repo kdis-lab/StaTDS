@@ -23,3 +23,15 @@ In this tutorial, we compare three clustering algorithms: K-Means, Agglomerative
 --------------------------------------------------------------------------------------------------------------------------------
 
 This Jupyter notebook presents a comparison of two well-known algorithms for mining association rules: Apriori and FP-Growth. The algorithms are compared in terms of runtime (the lower the better) for a varied set of datasets. The notebook includes some specific parts implemented by pandas (dataset loading) and mlxtend (association rule mining algorithms) that do not belong to StaTDS and could be done with other different libraries.
+
+
+`StaTDS Tutorial: Preprocessing methods <https://colab.research.google.com/drive/18QhflKEKTBaJHCeT4g-MZyfL2-1CFiZs?usp=sharing>`_
+---------------------------------------------------------------------------------------------------------------------------------
+
+This Jupyter notebook provides a comparative analysis of various data preprocessing techniques such as normalization, standardization, binarization, and PCA. The performance of these methods is evaluated based on their impact on the accuracy and efficiency of a set of machine learning algorithms across multiple datasets. The notebook includes some specific parts implemented by pandas (dataset loading) and sklearn (preprocessing algorithms) that do not belong to StaTDS and could be done with other different libraries.
+
+
+`StaTDS Tutorial: Feature selection methods <https://colab.research.google.com/drive/18QhflKEKTBaJHCeT4g-MZyfL2-1CFiZs?usp=sharing>`_
+-------------------------------------------------------------------------------------------------------------------------------------
+
+In this Jupyter notebook, we examine different feature selection techniques including SelectKBest, RFE, and SelectFromModel. These methods are evaluated to determine their effectiveness in improving the performance of a Random Forest classifier across various datasets. The evaluation metrics focus on model accuracy and computational cost. The notebook includes some specific parts implemented by pandas (dataset loading) and sklearn (preprocessing, decomposition algorithms) that do not belong to StaTDS and could be done with other different libraries.
