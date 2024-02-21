@@ -61,6 +61,7 @@ StaTDS is a library for mathematicians, scientists, and engineers. It includes v
 | Hommel                      | no_parametrics.hommel                 |
 | Rom                         | no_parametrics.rom                    |
 | Schaffer                    | no_parametrics.shaffer                |
+
 ## Developed in:
 ![Python](https://img.shields.io/badge/Python-yellow?style=for-the-badge&logo=python&logoColor=white&labelColor=101010)
 
@@ -110,7 +111,136 @@ Ensure that Python and pip are correctly installed on your operating system befo
     $ pip install statds[full-app]
     ```
 
-Now, you only need create a python script with next code:
+## Quick start
+
+- If you have questions, please ask them in GitHub Discussions.
+- If you want to report a bug, please open an [issue on the GitHub repository](https://github.com/kdis-lab/StaTDS/issues).
+- If you want to see StaTDS in action, please click on the link below and navigate to the notebooks/ folder to open a collection of interactive Jupyter notebooks.
+
+### Using StaTDS Library - API
+
+#### Normality tests: Shapiro Test
+
+```python
+from statds.normality import shapiro_wilk_normality
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+results = []
+
+for i in range(1, len(columns)): 
+    results.append(shapiro_wilk_normality(dataset[columns[i]].to_numpy(), alpha))
+
+statistic_list, p_value_list, cv_value_list, hypothesis_list = zip(*results)
+
+results_test = pd.DataFrame({"Algorithm": columns[1:], "Statistic": statistic_list, "p-value": p_value_list, "Results": hypothesis_list})
+print(results_test)
+```
+
+#### Homoscedasticy tests: Levene
+```python
+from statds.homoscedasticity import levene_test
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+statistic, p_value, rejected_value, hypothesis = levene_test(dataset, alpha, center='mean')
+print(hypothesis)
+print(f"Statistic {statistic}, Rejected Value {rejected_value}")
+```
+
+
+#### Parametrics tests: T-test
+```python
+from statds.parametrics import t_test_paired
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+selected_columns = [columns[1], columns[2]]
+statistic, rejected_value, p_value, hypothesis = t_test_paired(dataset[selected_columns], alpha)
+print(hypothesis)
+print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+```
+
+#### Parametrics tests: ANOVA
+```python
+from statds.parametrics import anova_test
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+statistic, p_value, rejected_value, hypothesis = anova_test(dataset, alpha)
+print(hypothesis)
+print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+```
+
+#### Non-parametrics tests: Wilcoxon
+```python
+from statds.no_parametrics import wilconxon
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+selected_columns = [columns[1], columns[2]]
+statistic, p_value, rejected_value, hypothesis = wilconxon(dataset[selected_columns], alpha)
+print(hypothesis)
+print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+```
+
+#### Non-parametrics tests: Friedman Test
+
+```python
+import pandas as pd
+from statds.no_parametrics import friedman
+
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, criterion=False)
+print(hypothesis)
+print(ff"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+print(rankings)
+```
+
+#### Post-hoc tests: Bonferroni
+
+```python
+from statds.no_parametrics import friedman, bonferroni
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, criterion=False)
+print(hypothesis)
+print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+print(rankings)
+num_cases = dataset.shape[0]
+results, figure = bonferroni(rankings, num_cases, alpha, control = None, type_rank = "Friedman")
+print(results)
+figure.show()
+```
+
+#### Post-hoc tests: Nemenyi
+
+```python
+from statds.no_parametrics import friedman, nemenyi
+dataset = pd.read_csv("dataset.csv")
+alpha = 0.05
+columns = list(dataset.columns)
+rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, criterion=False)
+print(hypothesis)
+print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+print(rankings)
+num_cases = dataset.shape[0]
+ranks_values, critical_distance_nemenyi, figure = nemenyi(rankings, num_cases, alpha)
+print(ranks_values)
+print(critical_distance_nemenyi)
+figure.show()
+```
+
+
+### Using StaTDS Web Client
+
+#### Local with Python
+
+You only need create a python script with next code:
+
 ```python
 from statds import app
 
@@ -119,7 +249,7 @@ app.start_app(port=8050)
 
 Now, you can access to the interface with your Web navigator through the following url: http://localhost:8050
 
-### Using Docker
+#### Local Using Docker
 
 Firstly, to begin with, it is essential to download the repository from GitHub to obtain the Dockerfile. Before this step, ensure that Docker is installed on your computer [2]. With Docker ready to use, you can build the application's image by executing the following command:
 
@@ -134,6 +264,7 @@ docker run -p 8050:8050 --name container name-lib
 ```
 
 Now, you can access to the interface with your Web navigator through the following url: http://localhost:8050
+
 
 ## References
 [1] 1.5 getting started - installing git. Git. (n.d.). https://git-scm.com/book/en/v2/Getting-Started-Installing-Git 
