@@ -514,8 +514,8 @@ def get_p_value_t(z_value: float, k_degrees_of_freedom: int):
         The t value.
     """
 
-    numerator = math.gamma((nu + 1) / 2) 
-    denominator = (np.sqrt(nu * np.pi) * math.gamma(nu / 2) * ((1 + (x**2) / nu) ** ((nu + 1) / 2))) 
+    numerator = math.gamma((k_degrees_of_freedom + 1) / 2) 
+    denominator = (np.sqrt(k_degrees_of_freedom * np.pi) * math.gamma(k_degrees_of_freedom / 2) * ((1 + (z_value**2) / k_degrees_of_freedom) ** ((k_degrees_of_freedom + 1) / 2))) 
     result = numerator / denominator 
     return 2 * result
 

@@ -345,7 +345,7 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
 
     if num_cases > 15 or num_algorithm >= 3:
         # P-value = P(chi^2_{k-1} >= Q)
-        reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm-1, alpha)
+        reject_value = stats.chi_sq(stadistic_friedman, num_algorithm-1)
         if reject_value[0] < alpha:
             hypothesis_state = False
     else:
@@ -499,7 +499,7 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
     if num_cases > 15 or num_algorithm > 4:
         # P-value = P(chi^2_{k-1} >= Q)
         # Cargamos la tabla estadística
-        reject_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm - 1, alpha)
+        reject_value = stats.chi_sq(stadistic_friedman, num_algorithm - 1)
         if reject_value[0] < alpha:
             hypothesis_state = False
     else:
@@ -1724,7 +1724,7 @@ def mcnemar(results_1, results_2, real_results, alpha: float = 0.05, verbose: bo
                           - 1) ** 2) / (matrix_mcnemar.at["Alg1_Error", "Alg2_OK"] +
                                         matrix_mcnemar.at["Alg1_OK", "Alg2_Error"])
 
-    p_value, cv_mcnemar = stats.get_p_value_chi2(mcnemar_statistic, 1, alpha)
+    p_value, cv_mcnemar = stats.chi_sq(mcnemar_statistic, 1)
 
     print(f"McNemar statistic: {mcnemar_statistic}, CV McNemar with alpha {alpha}: {cv_mcnemar}")
     if cv_mcnemar > mcnemar_statistic:

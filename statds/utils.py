@@ -327,7 +327,7 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
     """
     global available_test_multiple_groups, available_test_two_groups, available_post_hoc, parametrics_test
     pdf = None
-    if generate_pdf:
+    if generate_pdf and available_fpdf:
         pdf = InformPDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=pdf.margin_bottom_threshold)
@@ -453,7 +453,7 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
 
         plt.close('all')
 
-    if generate_pdf:
+    if generate_pdf and available_fpdf:
         pdf.output(name_pdf)
 
 
