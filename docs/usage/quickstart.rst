@@ -18,7 +18,7 @@ For the latest version:
 
 .. code-block:: bash
 
-    git clone https//github.com/kdislab/StaTDS
+    git clone https://github.com/kdis-lab/StaTDS
     python setup.py bdist_wheel
     pip install /path/to/wheelfile.whl
 
@@ -46,7 +46,7 @@ For the stable version:
 Example scripts
 ---------------
 
-The github repository hosts `example scripts <https://github.com/kdislab/statds/tree/main>`_ and `notebooks <https://github.com/kdislab/statds/tree/main/notebooks>`_ on how to use the library for different use cases, such as parametrics and non-parametrics test. Here you can see some examples:
+The github repository hosts `example scripts <https://github.com/kdis-lab/StaTDS>`_ and `notebooks <https://github.com/kdis-lab/StaTDS/notebooks>`_ on how to use the library for different use cases, such as parametrics and non-parametrics test. Here you can see some examples:
 
 Normality tests: Shapiro Test
 +++++++++++++++++++++++++++++

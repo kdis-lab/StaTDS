@@ -84,7 +84,7 @@ StaTDS could be downloaded using two different ways: using pip or git as command
 ### Using Git repository
 The installation process for Git is detailed for each supported operating system in [1]. Additionally, a comprehensive guide on downloading StaTDS is provided. Git can be easily installed on widely used operating systems such as Windows, Mac, and Linux. It is worth noting that Git comes pre-installed on the majority of Mac and Linux machines by default.
 ```
- $ git clone https//github.com/kdislab/StaTDS 
+ $ git clone https//github.com/kdis-lab/StaTDS 
 ```
 
 ```
