@@ -216,7 +216,7 @@ def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
                      "Mean Square (MS)": mean_square, "F-Stat": f_stats, "Rejected Value": rejected_values}
     anova_results = pd.DataFrame(anova_results)
     
-    return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
+    return summary_results, anova_results, statistical_f_anova, p_value, rejected_value, hypothesis
 
 
 def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
@@ -282,12 +282,12 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     df_bs = num_samples[0] - 1
     ms_bs = ss_bs / df_bs
 
-    ss_res = sum_x_square_t - ss_bc - ss_bs
+    ss_t = sum_x_square_t - (sum_x_t ** 2) / num_total
+    ss_res = ss_t - ss_bc - ss_bs
     df_res = (num_samples[0] - 1) * (num_groups - 1)
     ms_res = ss_res / df_res
 
     statistical_f_anova = ms_bc / ms_res
-
     rejected_value = stats.get_cv_f_distribution(df_bc, df_res, alpha=alpha)
     p_value = stats.get_p_value_f(statistical_f_anova, df_bc, df_res)
 
@@ -313,4 +313,4 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
                      "Mean Square (MS)": mean_square, "F-Stat": f_stats, "Rejected Value": rejected_values}
     anova_results = pd.DataFrame(anova_results)
      
-    return [summary_results, anova_results], statistical_f_anova, p_value, rejected_value, hypothesis
+    return summary_results, anova_results, statistical_f_anova, p_value, rejected_value, hypothesis
