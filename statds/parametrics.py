@@ -46,13 +46,18 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
 
     names_groups = list(dataset.columns)
     num_samples = dataset.shape[0]
-    mean_samples = np.mean(dataset[names_groups[0]] - dataset[names_groups[1]])
-    std_samples = np.std(dataset[names_groups[0]] - dataset[names_groups[1]])
+    diff = dataset[names_groups[0]] - dataset[names_groups[1]]
 
-    standard_error_of_the_mean = std_samples / math.sqrt(num_samples)
+    sum_d = diff.sum()
 
-    statistical_t = mean_samples / standard_error_of_the_mean
-
+    sum_d_2 = (diff ** 2).sum()
+    mean_d = sum_d / num_samples
+    s_d = math.sqrt((sum_d_2 - (sum_d ** 2) / num_samples) / (num_samples - 1))
+    s_d = s_d / math.sqrt(num_samples)
+    statistical_t = mean_d / s_d
+    # TODO FALLA EL P-VALOR DEBIDO A QUE LA FUNCIÓN ACTUAL NO ES LA ADECUADA
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp2f1.html#r633ce8001a03-4
+    # https://en.wikipedia.org/wiki/Student%27s_t-distribution REVISAR LA FORMULA CDF
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     p_value = stats.get_p_value_t(statistical_t, num_samples - 1)
 
@@ -106,15 +111,19 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
 
     names_groups = list(dataset.columns)
     num_samples = dataset.shape[0]
+    sum_1 = dataset[names_groups[0]].sum()
+    sum_2 = dataset[names_groups[1]].sum()
 
-    numerator = (num_samples - 1) * (np.std(dataset[names_groups[0]]) ** 2 + np.std(dataset[names_groups[1]]) ** 2)
-    denominator = num_samples + num_samples - 2
+    square_sum_1 = (dataset[names_groups[0]] ** 2).sum()
+    square_sum_2 = (dataset[names_groups[1]] ** 2).sum()
 
-    estimated_of_std = math.sqrt(numerator / denominator)
+    x_1_mean = sum_1 / num_samples
+    x_2_mean = sum_2 / num_samples
 
-    std_of_the_mean_value = estimated_of_std * math.sqrt(1 / float(num_samples) + 1 / float(num_samples))
+    s_1 = (square_sum_1 - (sum_1 ** 2 / num_samples)) / (num_samples - 1)
+    s_2 = (square_sum_2 - (sum_2 ** 2 / num_samples)) / (num_samples - 1)
 
-    statistical_t = np.mean(dataset[names_groups[0]]) - np.mean(dataset[names_groups[1]]) / std_of_the_mean_value
+    statistical_t = (x_1_mean - x_2_mean) / math.sqrt(s_1 / num_samples + s_2 / num_samples)
 
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     p_value = stats.get_p_value_t(statistical_t, num_samples - 1)
