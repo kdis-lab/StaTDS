@@ -73,6 +73,8 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     df = df.sort_index()
     results_table = pd.concat([results_table, df], axis=1)
 
+    tie_sum = 0
+
     if tied_ranges:
         # Realizar el calculo de los rangos teniendo en cuenta que se comparten valores
         vector = [abs(i) for i in results_table["dif"]]
@@ -92,6 +94,9 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
                 for i, x in enumerate(vector):
                     if x == number:
                         ranks[i] = average_rank
+    # tie_sum para aplicar la correción en caso de empates
+        tie_sizes = np.array(list(counts.values()))
+        tie_sum = (tie_sizes ** 3 - tie_sizes).sum()
 
     if verbose:
         print(results_table)
@@ -100,13 +105,12 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     r_minus = results_table[results_table.R == "-"]["rank"].sum()
 
     w_wilcoxon = min([r_plus, r_minus])
-    num_problems = results_table.shape[0]
+    num_problems = results_table.shape[0] - (results_table.R.isna().sum())
     mean_wilcoxon = (num_problems * (num_problems + 1)) / 4.0
+    # Si se desea realizar la correción por continuidad debemos de restarle 0.5 a abs(w_wilcoxon - mean_wilcoxon)
     std_wilcoxon = num_problems * (num_problems + 1) * ((2 * num_problems) + 1)
-    std_wilcoxon = math.sqrt(std_wilcoxon / 24.0)
+    std_wilcoxon = math.sqrt(std_wilcoxon / 24.0 - (tie_sum / 48))
     z_wilcoxon = (w_wilcoxon - mean_wilcoxon) / std_wilcoxon
-    print(z_wilcoxon)
-
     # Se debe de utilizar las tablas con los valores críticos
 
     cv_alpha_selected = stats.get_cv_willcoxon(num_problems, alpha)
@@ -120,7 +124,7 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
 
     # p_value = None
 
-    p_value = stats.get_p_value_normal(z_wilcoxon)
+    p_value = 2 * stats.get_p_value_normal(z_wilcoxon)
     if num_problems > 25:
 
         # print(f"p_value {p_value}, Stadistic: {w_wilcoxon}, Z_wilcoxon {z_wilcoxon}")
@@ -275,19 +279,7 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
     if p_value < alpha:
         hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
-    """
-    statistical_u = max(u1, u2)
-    print(statistical_u)
-    numerator = statistical_u - ((n1 * n2) / 2)
-    denominator = math.sqrt(n1 * n2 / 12 * ((n + 1) - tie_sum / (n * (n - 1))))
-    numerator = abs(numerator) - 0.5
-    z_value = numerator / denominator
-
-    p_value2 = 2 * stats.get_p_value_normal(z_value)
-    print(p_value2, p_value)
-    """
-
-    return statistical_u, None, p_value, hypothesis
+    return u1, None, p_value, hypothesis
 
 # -------------------- Test Two Groups -------------------- #
 
