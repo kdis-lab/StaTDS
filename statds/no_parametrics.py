@@ -228,49 +228,66 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
     The Mann-Whitney U test ranks all observations from both groups together and then compares the sum of ranks in each group. It is suitable for ordinal data and is robust against non-normal distributions. The test assumes that the two groups are independent and that the observations are ordinal or continuous. The normal approximation for the p-value calculation is valid for large sample sizes.
     """
     if dataset.shape[1] != 2:
-        raise "Error: The test only needs two samples"
+        raise Exception("Error: The test only needs two samples")
 
     columns = list(dataset.columns)
 
-    values_dataset = list(dataset.stack())
+    rankings = dataset.stack().rank(method='average', ascending=(not criterion)).unstack()
+    columns = list(dataset.columns)
+    n1 = n2 = dataset.shape[0]
 
-    aligned_observations = sorted(values_dataset)
-    aligned_observations = list(reversed(aligned_observations)) if criterion else aligned_observations
+    rank_1 = rankings.sum()[columns[0]]
+    rank_2 = rankings.sum()[columns[1]]
 
-    ranking_cases = [aligned_observations.index(v) + 1 + (aligned_observations.count(v) - 1) / 2. for v
-                     in values_dataset]
+    u1 = n1 * n2 + (n1 * (n1 + 1)) / 2 - rank_1
 
-    rank_alg1, rank_alg2 = zip(*[(ranking_cases[i], ranking_cases[i + 1]) for i in range(0, len(ranking_cases), 2)])
+    u2 = n1 * n2 + (n2 * (n2 + 1)) / 2 - rank_2
 
-    ranks = pd.DataFrame({"Ranks_"+columns[0]: rank_alg1, "Ranks_"+columns[1]: rank_alg2})
-    dataset = pd.concat([dataset, ranks], axis=1)
+    if n1 * n2 != u1 + u2:
+        raise Exception("Error to calculate U1 y U2")
 
-    rank_alg1, rank_alg2 = ranks.mean()
+    statistical_u = min(u1, u2)
 
     if verbose:
-        print(dataset)
-        print("Ranks_"+columns[0] + ": ", rank_alg1, "Ranks_"+columns[1] + ": ", rank_alg2)
+        print(rankings)
 
-    num_cases = dataset.shape[0]
+    numerator = statistical_u - ((n1 * n2) / 2)
+    n = n1 + n2
 
-    statistics_u_alg1 = num_cases * num_cases + (num_cases * (num_cases + 1)) / 2.0 - rank_alg1
-    statistics_u_alg2 = num_cases * num_cases + (num_cases * (num_cases + 1)) / 2.0 - rank_alg2
+    # Tie Correction for the normal approximation
 
-    statistical_u = max(statistics_u_alg1, statistics_u_alg2)
+    rank_values = list(rankings.stack())
+    sorted_values = np.sort(rank_values)
+    value_changes_idx = np.nonzero(np.r_[True, sorted_values[1:] != sorted_values[:-1], True])[0]
+    tie_sizes = np.diff(value_changes_idx).astype(np.float64)
+    tie_sum = (tie_sizes ** 3 - tie_sizes).sum()
 
-    mean_u = (num_cases * num_cases) / 2.0
+    denominator = math.sqrt(n1*n2/12 * ((n + 1) - tie_sum/(n*(n-1))))
 
-    std_u = math.sqrt((num_cases * num_cases) * (num_cases + num_cases + 1) / 12.0)
+    # TODO HABLAR CON ANTONIO: CORRECCION DE CONTINUIDAD -> DEBIDO A QUE NO SIEMPRE SE TENDRÍA QUE HACER
+    numerator = abs(numerator) - 0.5
 
-    z_value = (statistical_u - mean_u) / std_u
+    z_value = numerator / denominator
 
-    p_value = stats.get_p_value_normal(z_value)
+    p_value = 2 * stats.get_p_value_normal(z_value)
 
     hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
     if p_value < alpha:
         hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
-    return z_value, None, p_value, hypothesis
+    """
+    statistical_u = max(u1, u2)
+    print(statistical_u)
+    numerator = statistical_u - ((n1 * n2) / 2)
+    denominator = math.sqrt(n1 * n2 / 12 * ((n + 1) - tie_sum / (n * (n - 1))))
+    numerator = abs(numerator) - 0.5
+    z_value = numerator / denominator
+
+    p_value2 = 2 * stats.get_p_value_normal(z_value)
+    print(p_value2, p_value)
+    """
+
+    return statistical_u, None, p_value, hypothesis
 
 # -------------------- Test Two Groups -------------------- #
 
