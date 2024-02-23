@@ -58,7 +58,6 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     rank = 0.0
     # Esto se deberá de arreglar para cuando se repitan valores en las diferencias
     tied_ranges = not (len(set(absolute_dif)) == absolute_dif.shape[0])
-
     for index in absolute_dif.index:
         if math.fabs(0 - absolute_dif[index]) < 1e-10:
             # Se continua con el siguiente
@@ -103,9 +102,10 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     w_wilcoxon = min([r_plus, r_minus])
     num_problems = results_table.shape[0]
     mean_wilcoxon = (num_problems * (num_problems + 1)) / 4.0
-    std_wilcoxon = math.sqrt((num_problems * (num_problems + 1) * ((2 * num_problems) + 1)) / 24.0)
+    std_wilcoxon = num_problems * (num_problems + 1) * ((2 * num_problems) + 1)
+    std_wilcoxon = math.sqrt(std_wilcoxon / 24.0)
     z_wilcoxon = (w_wilcoxon - mean_wilcoxon) / std_wilcoxon
-
+    print(z_wilcoxon)
 
     # Se debe de utilizar las tablas con los valores críticos
 
@@ -118,10 +118,10 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     if w_wilcoxon <= cv_alpha_selected:
         hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
-    p_value = None
+    # p_value = None
 
+    p_value = stats.get_p_value_normal(z_wilcoxon)
     if num_problems > 25:
-        p_value = stats.get_p_value_normal(z_wilcoxon)
 
         # print(f"p_value {p_value}, Stadistic: {w_wilcoxon}, Z_wilcoxon {z_wilcoxon}")
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
@@ -187,7 +187,6 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
 
     statistical_binomial = max(diffence_plus, diffence_minus)
     num_samples = diffence_plus + diffence_minus
-
     # Calculate the p-value of binomial distribution
     p_value = stats.get_p_value_binomial(num_samples, statistical_binomial)
 
@@ -277,7 +276,7 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
 
 
 # -------------------- Test Multiple Groups -------------------- #
-def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False) -> object:
     """
     Perform the Friedman test, a non-parametric statistical test similar to the parametric ANOVA, but for
     repeated measures. The Friedman test is used to detect differences in treatments across multiple test
@@ -303,8 +302,10 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
     statistic_friedman : float
         The Friedman test statistic, which is chi-squared distributed under the null
         hypothesis.
-    reject_value : tuple
-        A tuple containing the critical value for the test and the p-value (if applicable).
+    p_value : float
+        The p-value for the hypothesis test.
+    cv_alpha_selected : float or None
+        The critical value for the test at the specified alpha level.
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic, critical value, and
         alpha.
@@ -343,21 +344,21 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
         print(df)
     rankings_with_label = {j: i / num_cases for i, j in zip(ranks, columns_names[1:])}
 
-    if num_cases > 15 or num_algorithm >= 3:
+    if num_cases > 15 or num_algorithm >= 3:  # > 4
         # P-value = P(chi^2_{k-1} >= Q)
-        reject_value = stats.chi_sq(stadistic_friedman, num_algorithm-1)
-        if reject_value[0] < alpha:
+        p_value, critical_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm-1, alpha=alpha)
+        if p_value < alpha:
             hypothesis_state = False
     else:
-        reject_value = [None, stats.get_cv_q_distribution(num_cases, num_algorithm-1, alpha)]
-        if stadistic_friedman <= reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
+        p_value, critical_value = None, stats.get_cv_q_distribution(num_cases, num_algorithm-1, alpha)
+        if stadistic_friedman <= critical_value:  # valueFriedman < p(alpha >= chi^2)
             hypothesis_state = False
 
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if hypothesis_state:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    return rankings_with_label, stadistic_friedman, reject_value[0], reject_value[1], hypothesis
+    return rankings_with_label, stadistic_friedman, p_value, critical_value, hypothesis
 
 
 def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
@@ -400,17 +401,22 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
     and is robust against non-normal distributions, similar to the Friedman test. However, it provides a more 
     accurate approximation to the F-distribution, making it preferable in certain statistical analyses.
     """
-    rankings_with_label, stadistic_friedman, p_value, cv_test, hypothesis = friedman(dataset, alpha, criterion, verbose)
+    rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha=alpha, criterion=criterion,
+                                                                        verbose=verbose)
 
-    columns_names = list(dataset.columns)
     num_cases, num_algorithm = dataset.shape
     num_algorithm -= 1
 
-    f_f = ((num_cases - 1) * stadistic_friedman) / (num_cases * (num_algorithm -1) - stadistic_friedman)
+    f_f = ((num_cases - 1) * statistic) / (num_cases * (num_algorithm - 1) - statistic)
 
-    p_value = stats.get_p_value_f(f_f, num_algorithm-1, (num_algorithm -1)*(num_cases-1))
+    p_value = stats.get_p_value_f(f_f, num_algorithm-1, (num_algorithm - 1)*(num_cases-1))
 
-    return f_f, p_value
+    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    if p_value < alpha:
+        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+
+    return rankings, f_f, p_value, None, hypothesis
+
 
 def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
@@ -438,8 +444,10 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
         A dictionary with the average ranks of each treatment or condition.
     statistic_friedman : float
         The Friedman Aligned Ranks test statistic.
-    reject_value : tuple
-        A tuple containing the critical value for the test and the p-value (if applicable).
+    p_value : float
+        The p-value for the hypothesis test.
+    cv_alpha_selected : float or None
+        The critical value for the test at the specified alpha level.
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic, critical value, and
         alpha.
@@ -496,24 +504,21 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
 
     hypothesis_state = True
 
-    if num_cases > 15 or num_algorithm > 4:
+    if num_cases > 15 or num_algorithm >= 3:  # > 4
         # P-value = P(chi^2_{k-1} >= Q)
-        # Cargamos la tabla estadística
-        reject_value = stats.chi_sq(stadistic_friedman, num_algorithm - 1)
-        if reject_value[0] < alpha:
+        p_value, critical_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm-1, alpha=alpha)
+        if p_value < alpha:
             hypothesis_state = False
     else:
-        # No se puede usar la chi^2, debemos de usar las tablas de la distribución Q
-        reject_value = [None, stats.get_cv_q_distribution(num_cases, num_algorithm-1, alpha)]
-        if stadistic_friedman <= reject_value[1]:  # valueFriedman < p(alpha >= chi^2)
+        p_value, critical_value = None, stats.get_cv_q_distribution(num_cases, num_algorithm - 1, alpha)
+        if stadistic_friedman <= critical_value:  # valueFriedman < p(alpha >= chi^2)
             hypothesis_state = False
 
-    # Interpret
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if hypothesis_state:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    return rankings_with_label, stadistic_friedman, reject_value[0], reject_value[1], hypothesis
+    return rankings_with_label, stadistic_friedman, p_value, critical_value, hypothesis
 
 
 def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
@@ -542,8 +547,10 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
         A dictionary with the average ranks of each treatment or condition.
     statistic_quade : float
         The Quade test statistic.
-    reject_value : tuple
-        A tuple containing the critical value for the test and the p-value (if applicable).
+    p_value : float
+        The p-value for the hypothesis test.
+    cv_alpha_selected : None
+        The critical value for the test at the specified alpha level.
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic, critical value, and
         alpha.
@@ -571,7 +578,6 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
 
     df["Rank_Q_i"] = ranking_cases
 
-    # Calculo de los rankings de forma eficiente
     for index in df.index:
         row = sorted(dataset.loc[index][columns_names].values.flatten().tolist())
         row_sort = list(reversed(row)) if criterion else row
@@ -599,16 +605,16 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
     stadistic_b = sum(s ** 2 for s in relative_size_to_algorithm) / float(num_cases)
     hypothesis_state = True
     stadistic_quade = None
+    critical_value = None
+
     if stadistic_a - stadistic_b > 0.0000000001:
         stadistic_quade = (num_cases - 1) * stadistic_b / (stadistic_a - stadistic_b)
         p_value = stats.get_p_value_f(stadistic_quade, num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1))
         if p_value < alpha:  # valueFriedman < p(alpha >= chi^2)
             hypothesis_state = False
-        reject_value = [p_value, None]
     else:
         p_value = math.pow((1 / float(math.factorial(num_algorithm))), num_cases - 1)
         hypothesis_state = False if p_value < alpha else True
-        reject_value = [p_value, None]
 
     # Si A = B se considera un región critical en la distribución estadística, y se calcula el p-valor como (1/k!)^n-1
 
@@ -621,7 +627,64 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
 
     rankings_with_label = {j: i for i, j in zip(rankings_avg, columns_names)}
 
-    return rankings_with_label, stadistic_quade, reject_value[0], reject_value[1], hypothesis
+    return rankings_with_label, stadistic_quade, p_value, critical_value, hypothesis
+
+
+def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    def adjust_for_ties(rank_values):
+        # Sort the rank values to identify ties
+        sorted_values = np.sort(rank_values)
+
+        # Identify the indices where values change (start and end of ties)
+        value_changes_idx = np.nonzero(np.r_[True, sorted_values[1:] != sorted_values[:-1], True])[0]
+
+        # Calculate the size of each tie group
+        tie_sizes = np.diff(value_changes_idx).astype(np.float64)
+
+        # Calculate the total sample size
+        sample_size = np.float64(rank_values.size)
+
+        # Calculate the correction factor for ties
+        correction_factor = 1.0 if sample_size < 2 else 1.0 - (tie_sizes ** 3 - tie_sizes).sum() / (
+                sample_size ** 3 - sample_size)
+
+        return correction_factor
+
+    data = pd.melt(dataset, id_vars=dataset.columns[0], var_name='Method', value_name='Performance')
+    dv, between = 'Performance', 'Method'
+    # Extract number of groups and total sample size
+    n_groups = data[between].nunique()
+    n = data[dv].size
+
+    # Rank data, dealing with ties appropriately
+    data["rank"] = data[dv].rank(method="average", ascending=(not criterion))
+
+    # Find the total of rank per group
+    grp = data.groupby(between, observed=True)["rank"]
+    sum_rank_group = grp.sum().to_numpy()
+    n_per_group = grp.count().to_numpy()
+
+    # Calculate chi-square statistic (H)
+    statistic_kruskal = (12 / (n * (n + 1)) * np.sum(sum_rank_group ** 2 / n_per_group)) - 3 * (n + 1)
+
+    # Correct for ties
+    correction = adjust_for_ties(data["rank"].to_numpy())
+    statistic_kruskal /= correction
+
+    # Calculate degrees of freedom and p-value
+    degrees_of_freedom = n_groups - 1
+    p_value, critical_value = stats.get_p_value_chi2(statistic_kruskal, degrees_of_freedom, alpha=alpha)
+
+    if verbose:
+        print(data)
+
+    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    if p_value < alpha:
+        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+
+    return statistic_kruskal, p_value, critical_value, hypothesis
+
+
 # -------------------- Test Multiple Groups -------------------- #
 
 
@@ -1724,10 +1787,12 @@ def mcnemar(results_1, results_2, real_results, alpha: float = 0.05, verbose: bo
                           - 1) ** 2) / (matrix_mcnemar.at["Alg1_Error", "Alg2_OK"] +
                                         matrix_mcnemar.at["Alg1_OK", "Alg2_Error"])
 
-    p_value, cv_mcnemar = stats.chi_sq(mcnemar_statistic, 1)
+    p_value, cv_mcnemar = stats.get_p_value_chi2(mcnemar_statistic, 1, alpha)
 
-    print(f"McNemar statistic: {mcnemar_statistic}, CV McNemar with alpha {alpha}: {cv_mcnemar}")
-    if cv_mcnemar > mcnemar_statistic:
+    if verbose:
+        print(f"McNemar statistic: {mcnemar_statistic}, CV McNemar with alpha {alpha}: {cv_mcnemar}")
+
+    if p_value < alpha:
         print(f"Different distributions (reject H0) with alpha {alpha}")
     else:
         print(f"Same distributions (fail to reject H0) with alpha {alpha}")

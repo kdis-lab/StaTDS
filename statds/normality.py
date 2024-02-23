@@ -274,9 +274,8 @@ def d_agostino_pearson(data: np.array, alpha: float = 0.05):
 
     # Calculate p-value with chi^2 with 2 degrees of freedom
     p_value, cv_value = stats.get_p_value_chi2(statistic_dp, 2, alpha=alpha)
-
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if p_value > alpha:
+    if p_value >= alpha:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
     return statistic_dp, p_value, cv_value, hypothesis

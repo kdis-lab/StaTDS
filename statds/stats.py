@@ -86,9 +86,11 @@ def get_p_value_binomial(num: int, statistical: int, probability: float = 0.5):
         The p-value associated with the given values.
     """
     # Calculate the p-value of binomial distribution
-    comb = math.comb(num, statistical)
+    def binom_prob(n, k, p):
+        return math.comb(n, k) * p ** k * (1 - p) ** (n - k)
 
-    p_value = comb * pow(probability, statistical) * pow(1 - probability, num - statistical)
+    p_value = sum(binom_prob(num, i, probability) for i in range(0, num + 1) if binom_prob(num, i, probability) <=
+                  binom_prob(num, statistical, probability))
 
     return p_value
 
@@ -118,6 +120,7 @@ def binomial_coef(n: int, k: int):
     return math.gamma(n + 1) / (math.gamma(k + 1) * math.gamma(n - k + 1))
 
 
+# TODO CAMBIAR ESTA FUNCIÓN Y COMBINARLA CON LA DE ABAJO
 def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
     """
     Calculate the p-value of a binomial distribution.
@@ -138,48 +141,46 @@ def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
     cv_to_alpha : float
         The critical value corresponding to the specified alpha.
     """
-    def calcular_pdf_chi2(value, df):
+
+    def chi_sq(z: float, k_freedom: int):
         """
-        Calculates the Probability Density Function (PDF) of the chi-squared distribution.
+        Calculate the chi-squared value for a given z-value and degrees of freedom.
 
         Parameters
         ----------
-        value : float
-            The value for which the PDF will be calculated.
-        df : int
-            The degrees of freedom of the chi-squared distribution.
+        z : float
+            The z-value for which the chi-squared value is calculated.
+        k_freedom : int
+            The degrees of freedom for the chi-squared calculation.
 
         Returns
         -------
         float
-            The PDF value for the given value and degrees of freedom.
+            The chi-squared value.
         """
-        return (1 / (2 ** (df / 2) * math.gamma(df / 2))) * value ** (df / 2 - 1) * math.exp(-value / 2)
+        if k_freedom == 1 and z > 1000:
+            return 0
+        if z > 1000 or k_freedom > 1000:
+            q = chi_sq((z - k_freedom) ** 2 / (2 * k_freedom), 1) / 2
+            return q if z > k_freedom else 1 - q
 
-    def calcular_cdf_chi2(value: float, degrees_of_freedom: int, step=0.0001):
-        """
-        Calculates the Cumulative Distribution Function (CDF) of the chi-squared distribution.
+        p = math.exp(-0.5 * z)
+        if k_freedom % 2 == 1:
+            p *= math.sqrt(2 * z / math.pi)
 
-        Parameters
-        ----------
-        value : float
-            The value for which the CDF will be calculated.
-        degrees_of_freedom : int
-            The degrees of freedom of the chi-squared distribution.
-        step : float
-            The step size for numerical approximation. Smaller step size results in higher precision.
+        k = k_freedom
+        while k >= 2:
+            p *= z / k
+            k -= 2
 
-        Returns
-        -------
-        float
-            The CDF value for the given value and degrees of freedom.
-        """
-        cdf = 0
-        x = 0
-        while x <= value:
-            cdf += calcular_pdf_chi2(x, degrees_of_freedom) * step
-            x += step
-        return cdf
+        t = p
+        a = k_freedom
+        while t > 1e-10 * p:
+            a += 2
+            t *= z / a
+            p += t
+
+        return 1 - p
 
     chi_table = pd.read_csv(current_directory / "assets/statistical_tables/chi_table.csv")
 
@@ -190,7 +191,7 @@ def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
     selected_df = min(available_df, key=lambda num: abs(num - k_degrees_of_freedom))
     cv_to_alpha = float(chi_table[chi_table.DF == selected_df][str(selected_alpha)].iloc[0])
 
-    p_value = 2 * calcular_pdf_chi2(z_value, k_degrees_of_freedom)
+    p_value = chi_sq(z_value, k_degrees_of_freedom)
 
     return p_value, cv_to_alpha
 
@@ -518,7 +519,6 @@ def get_p_value_t(z_value: float, k_degrees_of_freedom: int):
     denominator = (np.sqrt(k_degrees_of_freedom * np.pi) * math.gamma(k_degrees_of_freedom / 2) * ((1 + (z_value**2) / k_degrees_of_freedom) ** ((k_degrees_of_freedom + 1) / 2))) 
     result = numerator / denominator 
     return 2 * result
-
 
 def chi_sq(z_value: float, k_degrees_of_freedom: int):
     """
