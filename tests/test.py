@@ -1,30 +1,29 @@
 import unittest
 import pandas as pd
 from scipy import stats as st
+import pingouin as pg
 
-import normality
-import homoscedasticity
-import parametrics
-import no_parametrics
+from statds import normality
+from statds import homoscedasticity
+from statds import parametrics
+from statds import no_parametrics
 
 
 class Normality(unittest.TestCase):
-    data = pd.read_csv("src/assets/app/sample_dataset.csv")
+    data = pd.read_csv("sample_dataset.csv")
 
     def test_shapiro(self):
         for key in self.data.columns[1:]:
             sample = self.data[key].to_numpy()
             lib_statistical, lib_p_value = st.shapiro(sample)
             statistics, p_value, cv_value, hypothesis = normality.shapiro_wilk_normality(sample, alpha=0.05)
-            self.assertAlmostEqual(statistics, lib_statistical, delta=0.01)
-            print(statistics, lib_statistical)
-            print(p_value, lib_p_value)
-            self.assertAlmostEqual(p_value, lib_p_value, delta=0.1)
+            self.assertAlmostEqual(statistics, lib_statistical, delta=0.0001)
+            self.assertAlmostEqual(p_value, lib_p_value, delta=0.0001)
 
     def test_skewness(self):
         for key in self.data.columns[1:]:
             sample = self.data[key].to_numpy()
-            lib_skew = st.skew(sample)
+            lib_skew = float(st.skew(sample))
             skew = normality.skewness(sample)
             self.assertAlmostEqual(skew, lib_skew, delta=0.0001)
             lib_z_skew, lib_p_value = st.skewtest(sample)
@@ -48,21 +47,20 @@ class Normality(unittest.TestCase):
             sample = self.data[key].to_numpy()
             lib_statistic, lib_p_valor = st.normaltest(sample)
             statistic, p_value, cv_value, hypothesis = normality.d_agostino_pearson(sample)
-            self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
-            self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
+            self.assertAlmostEqual(statistic, lib_statistic, delta=0.000000001)
+            self.assertAlmostEqual(p_value, lib_p_valor, delta=0.000000001)
 
     def test_kolmogor_smirnow(self):
         for key in self.data.columns[1:]:
             sample = self.data[key].to_numpy()
             lib_statistic, lib_p_valor = st.kstest(sample, 'norm')
             statistic, p_value, cv_value, hypothesis = normality.kolmogorov_smirnov(sample)
-            # statistic, p_value, cv_value, hypothesis = parametrics.kolmogorov_smirnov_2(sample)
             self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
             self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
 
 
 class Homoscedasticity(unittest.TestCase):
-    data = pd.read_csv("src/assets/app/sample_dataset.csv")
+    data = pd.read_csv("sample_dataset.csv")
 
     def test_levene(self):
         samples = [self.data[i].to_numpy() for i in self.data.columns[1:]]
@@ -81,7 +79,7 @@ class Homoscedasticity(unittest.TestCase):
 
 
 class Parametrics(unittest.TestCase):
-    data = pd.read_csv("src/assets/app/sample_dataset.csv")
+    data = pd.read_csv("sample_dataset.csv")
 
     def test_t_test_paired(self):
         columns = list(self.data.columns[1:])
@@ -105,26 +103,75 @@ class Parametrics(unittest.TestCase):
             self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
             self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
 
-    # TODO Falta comparar con la librería de scipy, hay que buscar cual es la más adecuada
     def test_anova(self):
-        tables_summary, statistic, p_value, cv_value, hypothesis = parametrics.anova_cases(self.data)
-        self.assertEqual(len(tables_summary), 2)
-        self.assertTrue(isinstance(tables_summary[0], pd.DataFrame))
-        self.assertTrue(isinstance(tables_summary[1], pd.DataFrame))
+        summary_results, anova_results, statistic, p_value, cv, hypothesis = parametrics.anova_cases(self.data)
+        self.assertTrue(isinstance(summary_results, pd.DataFrame))
+        self.assertTrue(isinstance(anova_results, pd.DataFrame))
+        samples = [self.data[i].values for i in self.data.columns[1:]]
+        res = st.f_oneway(*samples)
+        lib_statistic, lib_p_valor = res.statistic, res.pvalue
+        self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
+        self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
 
     def test_anova_within_cases(self):
-        tables_summary, statistic, p_value, cv_value, hypothesis = parametrics.anova_within_cases(self.data)
-        self.assertEqual(len(tables_summary), 2)
-        self.assertTrue(isinstance(tables_summary[0], pd.DataFrame))
-        self.assertTrue(isinstance(tables_summary[1], pd.DataFrame))
+        results = pg.rm_anova(self.data[self.data.columns[1:]])
+        lib_statistic, lib_p_valor = results["F"].values[0], results["p-unc"].values[0]
+        summary_results, anova_results, statistic, p_value, cv, hypothesis = parametrics.anova_within_cases(self.data)
+        self.assertTrue(isinstance(summary_results, pd.DataFrame))
+        self.assertTrue(isinstance(anova_results, pd.DataFrame))
+        self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
+        self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
 
 
 class NoParametrics(unittest.TestCase):
-    data = pd.read_csv("src/assets/app/sample_dataset.csv")
+    data = pd.read_csv("sample_dataset.csv")
+
+    def test_wilcoxon(self):
+        columns = list(self.data.columns)
+        samples = self.data[columns[1:3]]
+        samples = [samples[i].values for i in samples.columns]
+        res = st.wilcoxon(*samples, method='approx')
+        lib_statistic, lib_p_valor = res.statistic, res.pvalue
+        statistic, cv_alpha_selected, p_value, hypothesis = no_parametrics.wilconxon(self.data[columns[1:3]])
+        self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
+        self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
+
+    def test_binomial(self):
+
+        columns = list(self.data.columns)
+        samples = self.data[columns[1:3]]
+        samples = [samples[i].values for i in samples.columns]
+        n_successes = sum(xi > yi for xi, yi in zip(samples[0], samples[1]))
+        # El número total de comparaciones (excluyendo empates)
+        n_trials = sum(xi != yi for xi, yi in zip(samples[0], samples[1]))
+        n_fail = n_trials - n_successes
+        n_successes = max(n_successes, n_fail)
+
+        # Realizamos el test binomial de signos
+        lib_p_valor = st.binom_test(n_successes, n_trials, p=0.5)
+        statistic, cv_alpha_selected, p_value, hypothesis = no_parametrics.binomial(self.data[columns[1:3]])
+        self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
+
+    def test_mannwhithney(self):
+        # self.data = pd.read_csv("demsar.csv")
+        columns = list(self.data.columns)
+        samples = self.data[columns[1:3]]
+        samples = [samples[i].values for i in samples.columns]
+        lib_statistic, lib_p_valor = st.mannwhitneyu(*samples)
+        statistic, cv_alpha_selected, p_value, hypothesis = no_parametrics.mannwhitneyu(self.data[columns[1:3]])
+        self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
+        self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
+
+    def test_kruskal(self):
+        samples = self.data[self.data.columns[1:]]
+        samples = [samples[i].values for i in samples.columns]
+        lib_statistic, lib_p_valor = st.kruskal(*samples)
+        statistic, p_value, cv_value, hypothesis = no_parametrics.kruskal_wallis(self.data)
+        self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
+        self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
 
     def test_friedman(self):
-        ranks, stadistic, p_value, cv_value, hypothesis = no_parametrics.friedman(self.data, 0.05,
-                                                                                  criterion=True)
+        ranks, stadistic, p_value, cv_value, hypothesis = no_parametrics.friedman(self.data, 0.05, criterion=True)
         results_article = {"ranks": {"PDFC": 1.7708333333333337, "NNEP": 2.479166666666667,
                                      "IS-CHC + 1NN": 2.479166666666667, "FH-GBML": 3.2708333333333326},
                            "statistic": 16.225, "p_value": 0.001019673101913754, "iman_p_value": 4.970002674994732E-4}
