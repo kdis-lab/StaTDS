@@ -46,7 +46,6 @@ def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'
     an F-distribution to obtain the p-value.
     """
 
-
     def trimmed_mean(data, proportion_to_cut=0.1):
         n = len(data)
         if n == 0:

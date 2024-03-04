@@ -120,7 +120,6 @@ def binomial_coef(n: int, k: int):
     return math.gamma(n + 1) / (math.gamma(k + 1) * math.gamma(n - k + 1))
 
 
-# TODO CAMBIAR ESTA FUNCIÓN Y COMBINARLA CON LA DE ABAJO
 def get_p_value_chi2(z_value: float, k_degrees_of_freedom: int, alpha: float):
     """
     Calculate the p-value of a binomial distribution.
@@ -428,16 +427,19 @@ def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
     df_numerator : int
         The degrees of freedom for the numerator, often corresponding to the number of groups minus one.
     df_denominator : int
-        The degrees of freedom for the denominator, usually related to the total number of observations minus the number of groups.
+        The degrees of freedom for the denominator, usually related to the total number of observations minus the number
+        of groups.
 
     Returns
     -------
     float
-        The p-value corresponding to the given F-statistic and degrees of freedom. This p-value indicates the probability of observing a value at least as extreme as the F-statistic under the null hypothesis.
+        The p-value corresponding to the given F-statistic and degrees of freedom. This p-value indicates the
+        probability of observing a value at least as extreme as the F-statistic under the null hypothesis.
 
     Note
     ----
-    The calculation of the p-value depends on the degrees of freedom for both the numerator and the denominator, and the F-statistic itself.
+    The calculation of the p-value depends on the degrees of freedom for both the numerator and the denominator, and the
+    F-statistic itself.
     """
     def stat_com(q: float, i: int, j: int, b: float):
         """
@@ -450,7 +452,8 @@ def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
         q : float
             A parameter typically representing a ratio of variance or a transformed probability value.
         i : int
-            The starting value for a series in the computation, usually relating to degrees of freedom or similar metrics.
+            The starting value for a series in the computation, usually relating to degrees of freedom or similar
+            metrics.
         j : int
             The ending value for the series in the computation.
         b : float
@@ -459,7 +462,8 @@ def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
         Returns
         -------
         float
-            The calculated statistical component based on the input parameters. This value contributes to the overall calculation of a p-value or other statistical measures in larger functions.
+            The calculated statistical component based on the input parameters. This value contributes to the overall
+            calculation of a p-value or other statistical measures in larger functions.
         """
         zz = 1
         z = zz
@@ -498,7 +502,7 @@ def get_p_value_f(value: float, df_numerator: int, df_denominator: int):
     return abs(1 - a + c)
 
 
-def get_p_value_t(z_value: float, k_degrees_of_freedom: int):
+def get_pdf_t(z_value: float, k_degrees_of_freedom: int):
     """
     Calculate the t value for a given z-value and degrees of freedom.
 
@@ -515,47 +519,52 @@ def get_p_value_t(z_value: float, k_degrees_of_freedom: int):
         The t value.
     """
 
-    numerator = math.gamma((k_degrees_of_freedom + 1) / 2) 
-    denominator = (np.sqrt(k_degrees_of_freedom * np.pi) * math.gamma(k_degrees_of_freedom / 2) * ((1 + (z_value**2) / k_degrees_of_freedom) ** ((k_degrees_of_freedom + 1) / 2))) 
-    result = numerator / denominator 
-    return 2 * result
+    numerator = math.gamma((k_degrees_of_freedom + 1) / 2)
+    denominator = np.sqrt(k_degrees_of_freedom * np.pi) * math.gamma(k_degrees_of_freedom / 2)
+    b = ((1 + (z_value**2) / k_degrees_of_freedom) ** (- (k_degrees_of_freedom + 1) / 2))
+    result = (numerator / denominator) * b
+    return result
 
-def chi_sq(z_value: float, k_degrees_of_freedom: int):
+
+def get_p_value_t(z_value: float, k_degrees_of_freedom: int, inf_approx=100, steps=1000000):
     """
-    Calculate the chi-squared value for a given z-value and degrees of freedom.
+    Calculate the p-value associated with a given z-value and degrees of freedom using
+    the t-distribution. This function approximates the p-value by converting the z-value
+    to a t-value and then integrating over the t-distribution to find the area under the curve.
 
     Parameters
     ----------
     z_value : float
-        The z-value for which the chi-squared value is calculated.
+        The z-value for which the p-value is to be calculated.
     k_degrees_of_freedom : int
-        The degrees of freedom for the chi-squared calculation.
+        The degrees of freedom for the t-distribution.
+    inf_approx : int, optional
+        The upper limit for the integral approximation, default is 100.
+    steps : int, optional
+        The number of steps to use in the numerical approximation, default is 1,000,000.
 
     Returns
     -------
     float
-        The chi-squared value.
+        The p-value corresponding to the given z-value and degrees of freedom.
     """
-    if k_degrees_of_freedom == 1 and z_value > 1000:
-        return 0
-    if z_value > 1000 or k_degrees_of_freedom > 1000:
-        q = chi_sq((z_value - k_degrees_of_freedom) ** 2 / (2 * k_degrees_of_freedom), 1) / 2
-        return q if z_value > k_degrees_of_freedom else 1 - q
+    h = (inf_approx - z_value) / steps
+    sum_f = 0.5 * (get_pdf_t(z_value, k_degrees_of_freedom) + get_pdf_t(inf_approx, k_degrees_of_freedom))
+    for i in range(1, steps):
+        sum_f += get_pdf_t(z_value + i * h, k_degrees_of_freedom)
+    return h * sum_f
 
-    p = math.exp(-0.5 * z_value)
-    if k_degrees_of_freedom % 2 == 1:
-        p *= math.sqrt(2 * z_value / math.pi)
 
-    k = k_degrees_of_freedom
-    while k >= 2:
-        p *= z_value / k
-        k -= 2
+def kolmogorov_p_value(d, n):
+    """
+    Calcula el p-valor para el estadístico de Kolmogorov-Smirnov.
 
-    t = p
-    a = k_degrees_of_freedom
-    while t > 1e-10 * p:
-        a += 2
-        t *= z_value / a
-        p += t
-
-    return 1 - p
+    :param d: El estadístico de Kolmogorov-Smirnov.
+    :param n: El número de observaciones.
+    :return: El p-valor aproximado.
+    """
+    summa = 0
+    for i in range(1, 1000000):  # Aumenta el rango para mayor precisión
+        summa += (-1) ** (i - 1) * math.exp(-2 * i ** 2 * d ** 2 * n)
+    p_value = 2 * summa
+    return p_value
