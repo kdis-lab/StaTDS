@@ -21,7 +21,8 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     Parameters
     ----------
     dataset : pandas.DataFrame
-        A DataFrame with exactly two columns, each representing a different condition or time point for the same subjects.
+        A DataFrame with exactly two columns, each representing a different condition or time point for the same
+        subjects.
     alpha : float, optional
         The significance level for the test. Default is 0.05.
     verbose : bool, optional
@@ -31,10 +32,10 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     -------
     w_wilcoxon : float
         The Wilcoxon test statistic, which is the smallest of the sums of the positive and negative ranks.
-    cv_alpha_selected : float or None
-        The critical value for the test at the specified alpha level (only for small sample sizes, otherwise None).
     p_value : float or None
         The p-value for the hypothesis test (only for large sample sizes, otherwise None).
+    cv_alpha_selected : float or None
+        The critical value for the test at the specified alpha level (only for small sample sizes, otherwise None).
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic, critical value, or p-value and alpha.
 
@@ -115,36 +116,32 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
 
     cv_alpha_selected = stats.get_cv_willcoxon(num_problems, alpha)
 
-    # print(f"Critical Value with alpha {alpha} and {num_problems} problems -> {cv_alpha_selected}, stadistic: "
-    #       f"{w_wilcoxon}")
-
-    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-    if w_wilcoxon <= cv_alpha_selected:
-        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-
-    # p_value = None
+    # hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    # if w_wilcoxon <= cv_alpha_selected:
+    #     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
     p_value = 2 * stats.get_p_value_normal(z_wilcoxon)
-    if num_problems > 25:
 
-        # print(f"p_value {p_value}, Stadistic: {w_wilcoxon}, Z_wilcoxon {z_wilcoxon}")
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-        if p_value < alpha:
-            hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    # if num_problems > 25:
+    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    if p_value < alpha:
+        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
-    return w_wilcoxon, cv_alpha_selected, p_value, hypothesis
+    return w_wilcoxon, p_value, cv_alpha_selected, hypothesis
 
 
 def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
-    Perform the Binomial Sign Test. This non-parametric test is used to determine if there is a significant difference between the medians of two dependent samples. 
-    It serves as an alternative to the paired t-test and Wilcoxon signed-rank test, particularly useful when the data does not meet the assumptions of these tests 
-    or when the data is on an ordinal scale.
+    Perform the Binomial Sign Test. This non-parametric test is used to determine if there is a significant difference
+    between the medians of two dependent samples. It serves as an alternative to the paired t-test and Wilcoxon
+    signed-rank test, particularly useful when the data does not meet the assumptions of these tests or when the data
+    is on an ordinal scale.
 
     Parameters
     ----------
     dataset : pandas.DataFrame
-        A DataFrame with exactly two columns, each representing a different condition or time point for the same subjects.
+        A DataFrame with exactly two columns, each representing a different condition or time point for the same
+        subjects.
     alpha : float, optional
         The significance level for the test. Default is 0.05.
     verbose : bool, optional
@@ -154,18 +151,19 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     -------
     statistical_binomial : float
         The Binomial test statistic, which is the largest of the counts of positive or negative differences.
-    cv_alpha_selected : float or None
-        The critical value for the test at the specified alpha level (not calculated in this function, hence None).
     p_value : float
         The p-value for the hypothesis test, calculated from the binomial distribution.
+    cv_value : float or None
+        The critical value for the test at the specified alpha level (not calculated in this function, hence None).
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic and p-value in comparison to alpha.
 
     Note
     ----
-    The Binomial Sign Test counts the number of positive and negative differences between paired observations and then tests if the observed proportion of positive 
-    (or negative) differences is significantly different from 0.5 (no difference). The test assumes that the distribution of differences is symmetric around the 
-    median and ignores pairs with no difference.
+    The Binomial Sign Test counts the number of positive and negative differences between paired observations and then
+    tests if the observed proportion of positive (or negative) differences is significantly different from 0.5
+    (no difference). The test assumes that the distribution of differences is symmetric around the median and ignores
+    pairs with no difference.
     """
     if dataset.shape[1] != 2:
         print("Error: The test only needs two samples")
@@ -197,13 +195,17 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
     if p_value < alpha:
         hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    cv_value = None
 
-    return statistical_binomial, None, p_value, hypothesis
+    return statistical_binomial, p_value, cv_value, hypothesis
 
 
 def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
     """
-    Perform the Mann-Whitney U Test, also known as the Wilcoxon rank-sum test. This non-parametric test is utilized to determine whether there is a significant difference between the distributions of two independent samples. It serves as an alternative to the independent t-test, particularly when the data does not satisfy the assumptions of the t-test.
+    Perform the Mann-Whitney U Test, also known as the Wilcoxon rank-sum test. This non-parametric test is utilized to
+    determine whether there is a significant difference between the distributions of two independent samples. It serves
+    as an alternative to the independent t-test, particularly when the data does not satisfy the assumptions of the
+    t-test.
 
     Parameters
     ----------
@@ -212,7 +214,8 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
     alpha : float, optional
         The significance level for the test. Default is 0.05.
     criterion : bool, optional
-        Determines the direction for ranking the observations. If False, ranks are in ascending order; if True, in descending order.
+        Determines the direction for ranking the observations. If False, ranks are in ascending order; if True, in
+        descending order.
     verbose : bool, optional
         If True, prints the detailed results table.
 
@@ -229,12 +232,13 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
 
     Note
     ----
-    The Mann-Whitney U test ranks all observations from both groups together and then compares the sum of ranks in each group. It is suitable for ordinal data and is robust against non-normal distributions. The test assumes that the two groups are independent and that the observations are ordinal or continuous. The normal approximation for the p-value calculation is valid for large sample sizes.
+    The Mann-Whitney U test ranks all observations from both groups together and then compares the sum of ranks in each
+    group. It is suitable for ordinal data and is robust against non-normal distributions. The test assumes that the two
+    groups are independent and that the observations are ordinal or continuous. The normal approximation for the p-value
+    calculation is valid for large sample sizes.
     """
     if dataset.shape[1] != 2:
         raise Exception("Error: The test only needs two samples")
-
-    columns = list(dataset.columns)
 
     rankings = dataset.stack().rank(method='average', ascending=(not criterion)).unstack()
     columns = list(dataset.columns)
@@ -268,7 +272,7 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
 
     denominator = math.sqrt(n1*n2/12 * ((n + 1) - tie_sum/(n*(n-1))))
 
-    # TODO HABLAR CON ANTONIO: CORRECCION DE CONTINUIDAD -> DEBIDO A QUE NO SIEMPRE SE TENDRÍA QUE HACER
+    # TODO CORRECCION DE CONTINUIDAD
     numerator = abs(numerator) - 0.5
 
     z_value = numerator / denominator
@@ -278,14 +282,16 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
     hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
     if p_value < alpha:
         hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    cv_value = None
 
-    return u1, None, p_value, hypothesis
+    return u2, p_value, cv_value, hypothesis
 
 # -------------------- Test Two Groups -------------------- #
 
 
 # -------------------- Test Multiple Groups -------------------- #
-def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False) -> object:
+def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False,
+             apply_correction: bool = False) -> object:
     """
     Perform the Friedman test, a non-parametric statistical test similar to the parametric ANOVA, but for
     repeated measures. The Friedman test is used to detect differences in treatments across multiple test
@@ -303,6 +309,8 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
         ascending order; if True, in descending order.
     verbose : bool, optional
         If True, prints the detailed results table including ranks.
+    apply_correction : bool, optional
+        If True, apply Tie correction for the Friedman two-way analysis of variance by rank
 
     Returns
     -------
@@ -329,10 +337,12 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
     num_cases, num_algorithm = dataset.shape
     num_algorithm -= 1
     ranks = []
+
     for i in dataset.index:
         sr = dataset.loc[i][columns_names[1:]]
         ranks.append(sr.rank(method='average', ascending=(not criterion)).tolist())
 
+    rank_values = ranks
     df = pd.DataFrame(ranks, columns=columns_names[1:])
     ranks = [df[i].sum() for i in df.columns]
     row_ranks = {i: [j / num_cases] for i, j in zip(df.columns, ranks)}
@@ -347,6 +357,21 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
     ranks_sum = sum([i ** 2 for i in ranks])
     stadistic_friedman = (((12 / (num_cases * num_algorithm * (num_algorithm + 1))) * ranks_sum) - 3 * num_cases *
                           (num_algorithm + 1))
+    if apply_correction:
+        # [1] Handbook-of-parametric-and-nonparametric-statistical-procedures
+        # Tie correction for the Friedman two-way analysis of variance by rank:
+        total_ties = []
+        for rank in rank_values:
+            sorted_values = np.sort(rank)
+            value_changes_idx = np.nonzero(np.r_[True, sorted_values[1:] != sorted_values[:-1], True])[0]
+            tie_sizes = np.diff(value_changes_idx).astype(np.float64)
+            total_ties += list(tie_sizes)
+
+        tie_sizes = np.array(total_ties)
+
+        correction = 1.0 - (tie_sizes ** 3 - tie_sizes).sum() / (num_cases * (num_algorithm ** 3 - num_algorithm))
+
+        stadistic_friedman = stadistic_friedman / correction
 
     hypothesis_state = True
     if verbose:
@@ -424,7 +449,8 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
     if p_value < alpha:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
-    return rankings, f_f, p_value, None, hypothesis
+    critical_value = None
+    return rankings, f_f, p_value, critical_value, hypothesis
 
 
 def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
@@ -479,28 +505,38 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
 
     for i in columns_names:
         df[i] = dataset[i] - means_results
+
     aligned_observations = sorted(df[columns_names].values.flatten().tolist())
     aligned_observations = list(reversed(aligned_observations)) if criterion else aligned_observations
     # criterion El criterio por defecto es minimizar
     df_aligned = df.copy()
-
+    # TODO HABLARLO -> he tenido que poner criterio inverso
+    # print(aligned_observations)
     for index in df.index:
         for algorith in columns_names:
             v = df.loc[index][algorith]
             df.at[index, algorith] = aligned_observations.index(v) + 1 + (aligned_observations.count(v) - 1) / 2.
+            # print(v, df.at[index, algorith])
 
     ranks_j = [(df[i].sum()) ** 2 for i in columns_names]
     ranks_i = df[columns_names].sum(axis=1)
     ranks_i = (ranks_i ** 2).sum()
     sum_ranks_j = sum(ranks_j)
-    sum_ranks_j /= num_algorithm
+    # TODO ESTO ES LO QUE ESTABA ANTES Esto no se porque estaba Revisar
+    # CONSULTAR -> TENIENDO ESTA LINEA Y CAMBIANDO LA LINEAS SIGUIENTES SALE LO MISMO QUE EN EL ARTICULO
+    # (YA QUE SE SIGUEN LAS MISMAS FORMULAS)
+    # sum_ranks_j /= num_algorithm
     numerator = ((num_algorithm - 1) * (sum_ranks_j - ((num_algorithm * (num_cases ** 2) / 4.0) *
                                                        (num_algorithm * num_cases + 1) ** 2)))
 
     denominator = (num_algorithm * num_cases * (num_algorithm*num_cases + 1) * (2 * num_algorithm * num_cases + 1)) / 6
-    denominator = denominator - ranks_i
-
+    # TODO ESTO ES LO QUE ESTABA ANTES
+    # ESTAS SON LAS LINEAS QUE ME REFIERO SI COMENTAMOS ESTAS LINEAS Y PONEMOS LO OTRO SALE LO MISMO QUE LAS OTRAS
+    # LIBRERIAS
+    # denominator = denominator - ranks_i
+    denominator = denominator - (ranks_i / num_algorithm)
     stadistic_friedman = numerator / denominator
+
     ranks = [df[i].mean() for i in columns_names]
     rankings_with_label = {j: i for i, j in zip(ranks, columns_names)}
 
@@ -512,7 +548,6 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
         print(f"Rankings {ranks_j}")
 
     hypothesis_state = True
-
     if num_cases > 15 or num_algorithm >= 3:  # > 4
         # P-value = P(chi^2_{k-1} >= Q)
         p_value, critical_value = stats.get_p_value_chi2(stadistic_friedman, num_algorithm-1, alpha=alpha)
@@ -600,7 +635,9 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
     for index in df.index:
         row = np.array(df.loc[index][columns_names].values)
         r = df.loc[index]["Rank_Q_i"]
-        relative_size.append(list(r * (row - (num_algorithm + 1)//2)))
+        # relative_size.append(list(r * (row - (num_algorithm + 1)//2))) Tenia division exacta
+        # TODO ESTO ES LO QUE HACIA QUE SALGAN DIFERENTES LAS COSAS
+        relative_size.append(list(r * (row - (num_algorithm + 1) / 2)))
         rankings_without_average_adjusting.append(list(row * r))
 
     relative_size_to_algorithm = [sum(row[j] for row in relative_size) for j in range(num_algorithm)]
@@ -640,6 +677,47 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
 
 
 def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+    """
+    Perform the Kruskal-Wallis H-test for independent samples to determine whether the population
+    medians on a dependent variable are the same across all groups or not. This non-parametric method
+    does not assume a normal distribution of the residuals, making it a robust alternative to the one-way ANOVA.
+
+    The function includes an option to adjust for ties and provides detailed output, including the test statistic,
+    p-value, and a critical value based on the significance level (alpha). It can also print the dataset if verbose
+    mode is enabled.
+
+    Parameters
+    ----------
+    dataset : pd.DataFrame
+        A pandas DataFrame containing the dataset to be tested. The first column should be the grouping variable,
+        and the remaining columns should contain the data for each group.
+    alpha : float, optional
+        Significance level used to determine the critical value for the test. Default is 0.05.
+    criterion : bool, optional
+        If True, ranks will be sorted in descending order. Useful in certain contexts where high values are better.
+        Default is False.
+    verbose : bool, optional
+        If True, prints the dataset after melting and ranking. Useful for debugging or detailed analysis. Default is
+        False.
+
+    Returns
+    -------
+    statistic_kruskal : float
+        The Kruskal-Wallis H statistic, adjusted for ties.
+    p_value : float
+        The p-value for the test statistic.
+    critical_value : float
+        The critical chi-square value from the chi-square distribution table based on the alpha level.
+    hypothesis : str
+        A string stating the result of the hypothesis test based on the p-value and alpha.
+
+    Notes
+    -----
+    - The test is applied to data that is at least ordinal (rankable).
+    - This implementation automatically adjusts for ties in the data.
+    - The function converts the input data into long format, ranking the data, and then computes the test statistic.
+    """
+
     def adjust_for_ties(rank_values):
         # Sort the rank values to identify ties
         sorted_values = np.sort(rank_values)
@@ -940,17 +1018,17 @@ def nemenyi(ranks: dict, num_cases: int, alpha: float = 0.05, verbose: bool = Fa
     return ranks_values, critical_distance_nemenyi, figure
 
 
-def calculate_z_friedman(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
+def _calculate_z_friedman(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
     return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1)) / (6 * num_cases)))
 
 
-def calculate_z_friedman_aling(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
+def _calculate_z_friedman_aling(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
     # TODO Revisar
     # return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases + 1)) / 6))
     return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases * num_algorithm + 1)) / 6))
 
 
-def calculate_z_quade(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
+def _calculate_z_quade(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
     return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_algorithm + 1) * (2*num_cases + 1) *
                                               (num_algorithm - 1)) / (18 * num_cases * (num_cases + 1))))
 
@@ -1005,9 +1083,9 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
     algorithm_names = list(ranks.keys())
     index_control = 0 if all_vs_all else algorithm_names.index(control)
     ranks_values = [ranks[i] for i in ranks.keys()]
-    available_ranks = {"Friedman": calculate_z_friedman,
-                       "Friedman Aligned Ranks": calculate_z_friedman_aling,
-                       "Quade": calculate_z_quade
+    available_ranks = {"Friedman": _calculate_z_friedman,
+                       "Friedman Aligned Ranks": _calculate_z_friedman_aling,
+                       "Quade": _calculate_z_quade
                        }
     results = []
 
@@ -1129,13 +1207,16 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     Parameters
     ----------
     ranks : dict
-        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be
+        obtained based on multiple non-parametric tests.
     num_cases : int
         An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
     alpha : float, optional
-        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in
+        statistical testing.
     control : str, optional
-        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms
+        are compared against each other.
     type_rank : str, optional
         A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
     verbose : bool, optional
@@ -1201,20 +1282,23 @@ def holm(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
 def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None, 
             type_rank: str = "Friedman", verbose: bool = False):
     """
-    This function applies the Holland step-down procedure for controlling the family-wise error rate in multiple comparisons.
-    It's an improvement over the simple Bonferroni method and is particularly useful when dealing with a large number of comparisons,
-    and it is generally more powerful than the Bonferroni correction.
+    This function applies the Holland step-down procedure for controlling the family-wise error rate in multiple
+    comparisons. It's an improvement over the simple Bonferroni method and is particularly useful when dealing with a
+    large number of comparisons, and it is generally more powerful than the Bonferroni correction.
 
     Parameters
     ----------
     ranks : dict
-        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be
+        obtained based on multiple non-parametric tests.
     num_cases : int
         An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
     alpha : float, optional
-        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in
+        statistical testing.
     control : str, optional
-        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms
+        are compared against each other.
     type_rank : str, optional
         A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
     verbose : bool, optional
@@ -1229,9 +1313,9 @@ def holland(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = Non
 
     Note
     ----
-    The Holland method adjusts the alpha values for each comparison based on their rank in p-value, offering a more nuanced control
-    over Type I errors compared to the Bonferroni method. It's particularly effective in scenarios with multiple algorithm comparisons,
-    ensuring a more accurate interpretation of statistical results.
+    The Holland method adjusts the alpha values for each comparison based on their rank in p-value, offering a more
+    nuanced control over Type I errors compared to the Bonferroni method. It's particularly effective in scenarios with
+    multiple algorithm comparisons, ensuring a more accurate interpretation of statistical results.
     """
     num_algorithm = len(ranks.keys())
     algorithm_names = list(ranks.keys())
@@ -1370,13 +1454,16 @@ def hommel(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None
     Parameters
     ----------
     ranks : dict
-        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be
+        obtained based on multiple non-parametric tests.
     num_cases : int
         An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
     alpha : float, optional
-        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in
+        statistical testing.
     control : str, optional
-        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms
+        are compared against each other.
     type_rank : str, optional
         A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
     verbose : bool, optional
@@ -1546,13 +1633,16 @@ def li(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     Parameters
     ----------
     ranks : dict
-        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be obtained based on multiple non-parametric tests.
+        A dictionary where keys are the names of the algorithms and values are their respective ranks. The ranks must be
+        obtained based on multiple non-parametric tests.
     num_cases : int
         An integer representing the number of cases, datasets, or instances over which the rankings were calculated.
     alpha : float, optional
-        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in statistical testing.
+        A float representing the significance level used in the test. It defaults to 0.05, which is a common choice in
+        statistical testing.
     control : str, optional
-        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms are compared against each other.
+        An optional string specifying a control algorithm against which others will be compared. If None, all algorithms
+        are compared against each other.
     type_rank : str, optional
         A string indicating the type of ranking used (e.g., "Friedman"). Defaults to "Friedman".
     verbose : bool, optional
