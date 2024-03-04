@@ -200,7 +200,7 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     return statistical_binomial, p_value, cv_value, hypothesis
 
 
-def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
     Perform the Mann-Whitney U Test, also known as the Wilcoxon rank-sum test. This non-parametric test is utilized to
     determine whether there is a significant difference between the distributions of two independent samples. It serves
@@ -213,9 +213,6 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
         A DataFrame with exactly two columns, each representing a different independent sample.
     alpha : float, optional
         The significance level for the test. Default is 0.05.
-    criterion : bool, optional
-        Determines the direction for ranking the observations. If False, ranks are in ascending order; if True, in
-        descending order.
     verbose : bool, optional
         If True, prints the detailed results table.
 
@@ -240,7 +237,7 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
     if dataset.shape[1] != 2:
         raise Exception("Error: The test only needs two samples")
 
-    rankings = dataset.stack().rank(method='average', ascending=(not criterion)).unstack()
+    rankings = dataset.stack().rank(method='average').unstack()
     columns = list(dataset.columns)
     n1 = n2 = dataset.shape[0]
 
@@ -290,7 +287,7 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = F
 
 
 # -------------------- Test Multiple Groups -------------------- #
-def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False,
+def friedman(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False,
              apply_correction: bool = False) -> object:
     """
     Perform the Friedman test, a non-parametric statistical test similar to the parametric ANOVA, but for
@@ -304,9 +301,10 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
         columns as different treatments or conditions.
     alpha : float, optional
         The significance level for the test, default is 0.05.
-    criterion : bool, optional
-        Determines the direction for ranking the observations. If False, ranks are in
-        ascending order; if True, in descending order.
+    minimize : bool, optional
+        Determines whether the metric of interest should be minimized or maximized. If True, the metric is to be
+        minimized; if False, it is to be maximized. This parameter is crucial for tailoring the function's behavior to
+        the specific nature of the data or the goal of the analysis.
     verbose : bool, optional
         If True, prints the detailed results table including ranks.
     apply_correction : bool, optional
@@ -340,7 +338,7 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
 
     for i in dataset.index:
         sr = dataset.loc[i][columns_names[1:]]
-        ranks.append(sr.rank(method='average', ascending=(not criterion)).tolist())
+        ranks.append(sr.rank(method='average', ascending=minimize).tolist())
 
     rank_values = ranks
     df = pd.DataFrame(ranks, columns=columns_names[1:])
@@ -395,7 +393,7 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False
     return rankings_with_label, stadistic_friedman, p_value, critical_value, hypothesis
 
 
-def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False):
     """
     Perform the Iman-Davenport test, a non-parametric statistical test that is a modification of the Friedman test.
     This test is used when comparing more than two treatments or conditions across multiple blocks or subjects. 
@@ -409,9 +407,10 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
         columns as different treatments or conditions.
     alpha : float, optional
         The significance level for the test, default is 0.05.
-    criterion : bool, optional
-        Determines the direction for ranking the observations. If False, ranks are in
-        ascending order; if True, in descending order.
+    minimize : bool, optional
+        Determines whether the metric of interest should be minimized or maximized. If True, the metric is to be
+        minimized; if False, it is to be maximized. This parameter is crucial for tailoring the function's behavior to
+        the specific nature of the data or the goal of the analysis.
     verbose : bool, optional
         If True, prints the detailed results table including ranks.
 
@@ -435,7 +434,7 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
     and is robust against non-normal distributions, similar to the Friedman test. However, it provides a more 
     accurate approximation to the F-distribution, making it preferable in certain statistical analyses.
     """
-    rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha=alpha, criterion=criterion,
+    rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha=alpha, minimize=minimize,
                                                                         verbose=verbose)
 
     num_cases, num_algorithm = dataset.shape
@@ -453,7 +452,7 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
     return rankings, f_f, p_value, critical_value, hypothesis
 
 
-def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False):
     """
     Perform the Friedman Aligned Ranks test, an extension of the Friedman test. This test is used when dealing with
     multiple treatments or conditions over different subjects or blocks, especially in cases where the assumptions
@@ -467,9 +466,10 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
         columns as different treatments or conditions.
     alpha : float, optional
         The significance level for the test, default is 0.05.
-    criterion : bool, optional
-        Determines the direction for ranking the observations. If False, ranks are in
-        ascending order; if True, in descending order.
+    minimize : bool, optional
+        Determines whether the metric of interest should be minimized or maximized. If True, the metric is to be
+        minimized; if False, it is to be maximized. This parameter is crucial for tailoring the function's behavior to
+        the specific nature of the data or the goal of the analysis.
     verbose : bool, optional
         If True, prints the detailed results table including aligned ranks.
 
@@ -507,7 +507,7 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
         df[i] = dataset[i] - means_results
 
     aligned_observations = sorted(df[columns_names].values.flatten().tolist())
-    aligned_observations = list(reversed(aligned_observations)) if criterion else aligned_observations
+    aligned_observations = list(reversed(aligned_observations)) if not minimize else aligned_observations
     # criterion El criterio por defecto es minimizar
     df_aligned = df.copy()
     # TODO HABLARLO -> he tenido que poner criterio inverso
@@ -565,7 +565,7 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, criterion
     return rankings_with_label, stadistic_friedman, p_value, critical_value, hypothesis
 
 
-def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def quade(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False):
     """
     Perform the Quade test, a non-parametric statistical test used to identify significant differences between
     three or more matched groups. This test is particularly useful for blocked designs where treatments are
@@ -579,9 +579,10 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
         columns as different treatments or conditions.
     alpha : float, optional
         The significance level for the test, default is 0.05.
-    criterion : bool, optional
-        Determines the direction for ranking the observations. If False, ranks are in
-        ascending order; if True, in descending order.
+    minimize : bool, optional
+        Determines whether the metric of interest should be minimized or maximized. If True, the metric is to be
+        minimized; if False, it is to be maximized. This parameter is crucial for tailoring the function's behavior to
+        the specific nature of the data or the goal of the analysis.
     verbose : bool, optional
         If True, prints the detailed results table including ranks.
 
@@ -624,7 +625,7 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
 
     for index in df.index:
         row = sorted(dataset.loc[index][columns_names].values.flatten().tolist())
-        row_sort = list(reversed(row)) if criterion else row
+        row_sort = list(reversed(row)) if not minimize else row
         for algorith in columns_names:
             v = df.loc[index][algorith]
             df.at[index, algorith] = row_sort.index(v) + 1 + (row_sort.count(v) - 1) / 2.
@@ -676,7 +677,7 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, v
     return rankings_with_label, stadistic_quade, p_value, critical_value, hypothesis
 
 
-def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False):
     """
     Perform the Kruskal-Wallis H-test for independent samples to determine whether the population
     medians on a dependent variable are the same across all groups or not. This non-parametric method
@@ -693,9 +694,10 @@ def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
         and the remaining columns should contain the data for each group.
     alpha : float, optional
         Significance level used to determine the critical value for the test. Default is 0.05.
-    criterion : bool, optional
-        If True, ranks will be sorted in descending order. Useful in certain contexts where high values are better.
-        Default is False.
+    minimize : bool, optional
+        Determines whether the metric of interest should be minimized or maximized. If True, the metric is to be
+        minimized; if False, it is to be maximized. This parameter is crucial for tailoring the function's behavior to
+        the specific nature of the data or the goal of the analysis.
     verbose : bool, optional
         If True, prints the dataset after melting and ranking. Useful for debugging or detailed analysis. Default is
         False.
@@ -744,7 +746,7 @@ def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool =
     n = data[dv].size
 
     # Rank data, dealing with ties appropriately
-    data["rank"] = data[dv].rank(method="average", ascending=(not criterion))
+    data["rank"] = data[dv].rank(method="average", ascending=minimize)
 
     # Find the total of rank per group
     grp = data.groupby(between, observed=True)["rank"]
@@ -1897,7 +1899,7 @@ def mcnemar(results_1, results_2, real_results, alpha: float = 0.05, verbose: bo
         print(f"Same distributions (fail to reject H0) with alpha {alpha}")
 
 
-def multiple_sign_test(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bool = False, verbose: bool = False):
+def multiple_sign_test(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False):
     algorith_names = list(dataset.columns)[1:]
     columns_names_comparations = ["d1" + str(i) for i in range(2, len(algorith_names) + 1)]
     num_cases, num_algorithm = dataset.shape
@@ -1911,7 +1913,7 @@ def multiple_sign_test(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bo
         distances = pd.concat([distances, dif], axis=1)
         dataset[i] = distances[i].apply(lambda x: '+' if x >= 0 else '-')
 
-    sign_to_count = "-" if criterion else "+"
+    sign_to_count = "-" if not minimize else "+"
     r_count = [dataset[dataset[i] == sign_to_count].shape[0] for i in columns_names_comparations]
 
     table_cv = pd.read_csv("CV_Minimum_r.csv")
@@ -1935,7 +1937,7 @@ def multiple_sign_test(dataset: pd.DataFrame, alpha: float = 0.05, criterion: bo
     return results
 
 
-def contrast_estimation_based_on_medians(dataset: pd.DataFrame, criterion: bool = False, verbose: bool = False):
+def contrast_estimation_based_on_medians(dataset: pd.DataFrame, minimize: bool = False, verbose: bool = False):
     #  Este test no proporciona probabilidad de error
     def calculate_mean_unajusted_medians(unadjusted_estimator: dict, index: int):
         def change_sign(string: str, value: str):
@@ -1979,7 +1981,7 @@ def contrast_estimation_based_on_medians(dataset: pd.DataFrame, criterion: bool 
 
             constrast_estimation_results.at[name_i, name_j] = estimate_dif
 
-    if criterion:
+    if not minimize:
         constrast_estimation_results *= -1
 
     if verbose:

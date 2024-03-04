@@ -21,12 +21,14 @@ external_stylesheets = [dbc.themes.BOOTSTRAP, "app/style.css",
                         'https://use.fontawesome.com/releases/v5.8.1/css/all.css']
 import os
 server = Flask(__name__)
-server.secret_key ='test'
-my_root=os.getenv("WSGI_APPURL", "") + "/"
-my_root=os.getenv("DASH_REQUESTS_PATHNAME_PREFIX", my_root)
-#assets_path = os.getcwd() +'/assets'
-# app = Dash(__name__, server = server, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True, url_base_pathname=my_root)
-app = Dash(__name__, server = server, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+server.secret_key = 'test'
+my_root = os.getenv("WSGI_APPURL", "") + "/"
+my_root = os.getenv("DASH_REQUESTS_PATHNAME_PREFIX", my_root)
+# assets_path = os.getcwd() +'/assets'
+# app = Dash(__name__, server = server, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True,
+# url_base_pathname=my_root)
+
+app = Dash(__name__, server=server, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 app.title = 'StaTDS: Statistical Tests for Data Science'
 app._favicon = "images/logo-StaTDS.png" 
 # suppress_callback_exceptions=True Esto no es una buena práctica pero es la única forma de mantener el control dinámico
@@ -42,10 +44,10 @@ reference_content = ("Christian Luna Escudero, Antonio Rafael Moya Martín-Casta
 bibtext_content = '''
                     ```latex
                     @InProceedings{statds, 
-                        author={Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto, StaTDS: Statistical Tests for Data Science (name article and journay)},
-                        title={(StaTDS): name-article}, 
-                        booktitle={journay}, 
-                        year={2023}
+                        author={Christian Luna Escudero, Antonio Rafael Moya Martín-Castaño, José María Luna Ariza, Sebastián Ventura Soto},
+                        title={StaTDS library: Statistical Tests for Data Science}, 
+                        booktitle={Neurocomputing}, 
+                        year={2024}
                     }
                     ```
                   '''
@@ -83,8 +85,9 @@ def generate_navigator_menu():
                  for item in menus_2]
 
     download_file = dcc.Download(id="download-text")
-    content = [html.Div(content_2, className="left-menu")] + content + [import_button, export_button, generate_import_data_page(),
-                                     generate_export_table_page(), download_file]
+    content = [html.Div(content_2, className="left-menu")] + content + [import_button, export_button,
+                                                                        generate_import_data_page(),
+                                                                        generate_export_table_page(), download_file]
     return html.Div(
         children=content, className="navigator_menu"
     )
@@ -736,6 +739,7 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
         {'label': "Friedman", 'value': "Friedman"},
         {'label': "Friedman Aligned Ranks", 'value': "Friedman Aligned Ranks"},
         {'label': "Quade", 'value': "Quade"},
+        {'label': "Kruskal-Wallis", 'value': "Kruskal-Wallis"},
     ]
 
     multiple_groups_test_parametrics = [
@@ -820,7 +824,7 @@ def results_two_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
     selected_data = data[columns[1:]]
 
-    statistic, critical_value, p_value, hypothesis = test_function(selected_data, alpha)
+    statistic, p_value, critical_value, hypothesis = test_function(selected_data, alpha)
     if p_value is None:
         data_results = pd.DataFrame({"Statistic": [statistic], "Critical Value": [critical_value],
                                      "Result": [hypothesis]})
@@ -867,24 +871,29 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     # Se genera mediante la librería
     if columns[0] is None:
         return
-
     available_test = {"Friedman": no_parametrics.friedman,
                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                       "Quade": no_parametrics.quade,
+                      "Kruskal-Wallis": no_parametrics.kruskal_wallis,
                       "ANOVA between cases": parametrics.anova_cases,
                       "ANOVA within cases": parametrics.anova_within_cases
                       }
 
     test_function = available_test[columns[0]]
 
-    parameters_to_function = {"dataset": data, "alpha": alpha, "criterion": parameters["criterion"], "verbose": False}
+    parameters_to_function = {"dataset": data, "alpha": alpha, "minimize": parameters["minimize"], "verbose": False,
+                              "apply_correction": True}
     args_functions = inspect.signature(test_function)
     args = {name: parameter.default for name, parameter in args_functions.parameters.items()
             if name not in ["self", "kwargs", "args"]}
 
     parameters_to_function = {i: parameters_to_function[i] for i in args.keys()}
 
-    table_results, statistic, p_value, critical_value, hypothesis = test_function(**parameters_to_function)
+    if columns[0] == "Kruskal-Wallis":
+        statistic, p_value, critical_value, hypothesis = test_function(**parameters_to_function)
+        table_results = None
+    else:
+        table_results, statistic, p_value, critical_value, hypothesis = test_function(**parameters_to_function)
 
     if p_value is None:
         data_results = pd.DataFrame({"Statistic": [statistic], "Critical Value": [critical_value],
@@ -898,6 +907,7 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     title = html.H3(f"Multiple Groups", className="title")
     content = [title, test_subtitle, test_result]
     content_to_export = [test_subtitle, test_result_exportable]
+    rankings_with_label = {}
     if type(table_results) is list:
         tab_1, tab_1_exportable = generate_table_and_textarea(table_results[0], "14em", "Data Summary")
         caption_2 = f"Summary {columns[0]} test (significance level of {alpha})"
@@ -905,7 +915,7 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         
         content.extend([tab_1, tab_2])
         content_to_export.extend([tab_1_exportable, tab_2_exportable])
-    else:
+    elif type(table_results) is dict:
         rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
         rankings_data = pd.DataFrame(rankings_data)
         rankings_with_label = table_results
@@ -930,7 +940,7 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
         post_hoc_function = available_post_hoc[columns[1]]
 
         parameters_to_function = {"ranks": rankings_with_label, "num_cases": data.shape[0], "alpha": alpha,
-                                  "criterion": parameters["criterion"], "verbose": False, "name_fig": "",
+                                  "minimize": parameters["minimize"], "verbose": False, "name_fig": "",
                                   "control": parameters["control"], "type_rank": columns[0]
                                   }
         args_functions = inspect.signature(post_hoc_function)
@@ -977,7 +987,7 @@ def create_data_table(names_exp, parameters_exp):
         experiment, parameter = value
         table["Name Experiment"].append(experiment)
         table["Alpha"].append(parameter["alpha"])
-        criterion = "" if "criterion" not in parameter.keys() else "Maximize" if parameter["criterion"] else "Minimize"
+        criterion = "" if "minimize" not in parameter.keys() else "Maximize" if parameter["minimize"] else "Minimize"
         table["Criterion"].append(criterion)
         if "post_hoc" in parameter.keys():
             # test = [parameter["test"], parameter["post_hoc"]]
@@ -1033,10 +1043,11 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
                    ]
     if reset:
         return html.Div(""), "", None, export_modal, name_file_pdf
-
+    # TODO
     available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                                       "Quade": no_parametrics.quade,
+                                      "Kruskal-Wallis": no_parametrics.kruskal_wallis,
                                       "ANOVA between cases": parametrics.anova_cases,
                                       "ANOVA within cases": parametrics.anova_within_cases
                                       }
@@ -1049,8 +1060,10 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
     parametrics_test = ["T-Test paired", "T-Test unpaired", "ANOVA between cases", "ANOVA within cases"]
 
     names_experiments, parameter_experiments = user_experiments[0], user_experiments[1]
+    print(parameter_experiments)
     df = pd.DataFrame(current_session)
     experiments = utils.generate_json(names_experiments, parameter_experiments)
+    print(experiments)
     if generate_pdf:
         current_datetime = datetime.now()
         current_datetime = current_datetime.strftime("%Y%m%d_%H%M%S")
@@ -1083,7 +1096,7 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
             content_exportable.extend([dbc.ModalBody(table_results)])
         elif info_experiment["test"] in available_test_multiple_groups.keys():
             test_selected = {"test": info_experiment["test"], "post_hoc": info_experiment["post_hoc"],
-                             "criterion": info_experiment["criterion"], 
+                             "minimize": info_experiment["minimize"],
                              "control": info_experiment["control"] if info_experiment["post_hoc"] not in ["Nemenyi",
                                                                                                           "Schaffer"]
                              else None}
@@ -1167,7 +1180,7 @@ def add_experiment(add_n_clicks, remove_n_clicks, remove_all_n_clicks, alpha, te
 
         if not (test_multiple_groups is None):
             names_exp.append(get_letter_experiment(index_exp))
-            args = {"alpha": alpha, "test": test_multiple_groups, "post_hoc": test_post_hoc, "criterion": criterion}
+            args = {"alpha": alpha, "test": test_multiple_groups, "post_hoc": test_post_hoc, "minimize": criterion}
             if test_post_hoc not in ["Nemenyi", "Schaffer"]:
                 args["control"] = control
 
@@ -1271,8 +1284,7 @@ def results_normality(dataset: pd.DataFrame, alpha: float, test_normality: str, 
         statistic, p_value, cv_value, hypothesis = test_homocedasticity_function(dataset, alpha)
         title_homoscedasticity = f"{test_homoscedasticity} test (significance level of {alpha})"
         if p_value is None:
-            test_result = pd.DataFrame({"Statistic": [statistic], "Critical Value": [cv_value],
-                                         "Result": [hypothesis]})
+            test_result = pd.DataFrame({"Statistic": [statistic], "Critical Value": [cv_value], "Result": [hypothesis]})
         else:
             test_result = pd.DataFrame({"Statistic": [statistic], "P-value": [p_value], "Result": [hypothesis]})
 
@@ -1312,6 +1324,7 @@ def process_normality(n_clicks, reset, alpha, test_normality, test_homoscedastic
     # TODO PENSAR SI MERECE LA PENA PERMITIR GENERAR GRÁFICOS EN LA PARTE DE NORMALIDAD
 
     return html.Div(content), "", None, html.Div(content_export)
+
 
 @app.callback(
     Output("collapse", "is_open"),

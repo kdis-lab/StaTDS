@@ -26,14 +26,13 @@ class LibraryError(Exception):
 
 
 properties = {"title-header": "Inform elaborated with StaTDS",
-              "subtitle-header": "Version 1.0",
-              "ref-library": "https://github.com/kdis-lab/statds"}
+              "subtitle-header": "Version 1.1.2",
+              "ref-library": "https://github.com/kdis-lab/StaTDS"}
 
 available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                   "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                                   "Quade": no_parametrics.quade,
-                                  # "ANOVA between cases": parametrics.anova_test,
-                                  # "ANOVA within cases": parametrics.anova_within_cases_test
+                                  "Kruskal-Wallis": no_parametrics.kruskal_wallis,
                                   "ANOVA between cases": parametrics.anova_cases,
                                   "ANOVA within cases": parametrics.anova_within_cases
                                   }
@@ -370,13 +369,14 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         if "alpha" not in info_experiment.keys():
             raise LibraryError("Error: alpha argument dont found")
 
-        if multigroup_test and "criterion" not in info_experiment.keys():
+        print(info_experiment.keys())
+        if multigroup_test and "minimize" not in info_experiment.keys():
             raise LibraryError("Error: criterion argument dont found")
 
-        criterion = False if "criterion" not in info_experiment.keys() else info_experiment["criterion"]
+        criterion = False if "minimize" not in info_experiment.keys() else info_experiment["minimize"]
 
         function_args = {"dataset": dataset[columns_to_analysis], "alpha": float(info_experiment["alpha"]),
-                         "criterion": criterion, "verbose": False}
+                         "minimize": criterion, "verbose": False, "apply_correction": True}
 
         function_args = {i: function_args[i] for i in args.keys()}
 
@@ -389,7 +389,11 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         fig_size = []
 
         if multigroup_test:
-            table_results, statistic, p_value, critical_value, hypothesis = test_function(**function_args)
+            if info_experiment["test"] == "Kruskal-Wallis":
+                statistic, p_value, critical_value, hypothesis = test_function(**function_args)
+                table_results = None
+            else:
+                table_results, statistic, p_value, critical_value, hypothesis = test_function(**function_args)
             test_result = [f"- **Statistic:** {statistic}", f"- **Result:** {hypothesis}"]
             if p_value is None:
                 test_result.extend([f"- **Critival Value:** {critical_value}"])
@@ -397,7 +401,7 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
                 test_result.extend([f"- **P-value:** {p_value}"])
             if type(table_results) is list:
                 test_result.extend(table_results)
-            else:
+            elif type(table_results) is dict:
                 rankings_data = {i[0]: [round(i[1], 5)] for i in table_results.items()}
                 test_result.append(pd.DataFrame(rankings_data))
             if post_hoc_test:
@@ -479,7 +483,7 @@ def process_alpha_experiment(parameter):
     available_alpha = [0.1, 0.05, 0.025, 0.01, 0.005, 0.001]
     name_test_two_groups = ["Wilcoxon", "Binomial Sign", "Mann-Whitney U", "T-Test paired", "T-Test unpaired"]
     name_test_multiple_groups = ["Friedman", "Friedman Aligned Ranks", "Quade", "ANOVA between cases",
-                                 "ANOVA within cases"]
+                                 "ANOVA within cases", "Kruskal-Wallis"]
 
     struct = {}
 
@@ -489,7 +493,7 @@ def process_alpha_experiment(parameter):
     struct["alpha"] = float(parameter["alpha"])
 
     if not ("test" in parameter.keys()):
-        raise LibraryError(f"Error: Missing argument criterion for the required test")
+        raise LibraryError(f"Error: Missing argument minimize for the required test")
 
     struct["test"] = parameter["test"]
 
@@ -503,11 +507,13 @@ def process_alpha_experiment(parameter):
         struct["second_group"] = parameter["second_group"]
 
     elif struct["test"] in name_test_multiple_groups:
-        if not ("criterion" in parameter.keys()):
-            raise LibraryError(f"Error: Missing argument criterion for the required test")
-        struct["criterion"] = parameter["criterion"]
+        if not ("minimize" in parameter.keys()):
+            raise LibraryError(f"Error: Missing argument minimize for the required test")
+        struct["minimize"] = parameter["minimize"]
         struct["post_hoc"] = parameter["post_hoc"] if "post_hoc" in parameter.keys() else None
         struct["control"] = parameter["control"] if "control" in parameter.keys() else None
+
+    print("hola", struct)
     return struct
 
 
@@ -594,13 +600,13 @@ if __name__ == "__main__":
             "alpha": 0.05,
             "first_group": "PDFC",
             "second_group": "FH-GBML",
-            "criterion": False
+            "minimize": False
         },
         "experiment_4": {
             "test": "Friedman",
             "alpha": 0.05,
             "post_hoc": "Holm",
-            "criterion": False,
+            "minimize": False,
             "control": None,
             "all_vs_all": True
         },
@@ -608,7 +614,7 @@ if __name__ == "__main__":
             "test": "Friedman",
             "alpha": 0.05,
             "post_hoc": "Nemenyi",
-            "criterion": False,
+            "minimize": False,
             "control": None,
             "all_vs_all": False
         },
@@ -616,7 +622,7 @@ if __name__ == "__main__":
             "test": "Friedman",
             "alpha": 0.05,
             "post_hoc": None,
-            "criterion": False,
+            "minimize": False,
             "control": None,
             "all_vs_all": True
         },
@@ -625,7 +631,7 @@ if __name__ == "__main__":
             "alpha": 0.05,
             "first_group": "PDFC",
             "second_group": "FH-GBML",
-            "criterion": False
+            "minimize": False
         }
     }
     import pandas as pd
@@ -638,8 +644,8 @@ if __name__ == "__main__":
                           "second_group": columns[-1]},
                          {"alpha": "0.05", "test": "T-Test paired",
                           "first_group": columns[1], "second_group": columns[-1]},
-                         {"alpha": 0.05, "test": "ANOVA between cases", "criterion": True},
-                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Bonferroni"},
-                         {"alpha": [0.05, 0.01], "test": "Friedman", "criterion": True, "post_hoc": "Nemenyi"}
+                         {"alpha": 0.05, "test": "ANOVA between cases", "minimize": True},
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "minimize": True, "post_hoc": "Bonferroni"},
+                         {"alpha": [0.05, 0.01], "test": "Friedman", "minimize": True, "post_hoc": "Nemenyi"}
                          ])
     analysis_of_experiments(df, aux, generate_pdf=True)
