@@ -26,19 +26,20 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
     -------
     statistical_t : float
         The t-test statistic. A higher absolute value indicates a greater difference between the paired groups.
-    rejected_value : float
-        The critical value for the test at the specified alpha level.
     p_value : float
         The p-value for the hypothesis test (currently not calculated and set to None).
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic and alpha. It indicates whether the null 
         hypothesis (no difference between means) can be rejected or not.
 
     Note
     ----
-    The paired t-test is appropriate for comparing two means from the same group or individual under two different conditions. 
-    The test statistic is calculated by dividing the mean difference between paired observations by the standard error of 
-    the mean difference. The test is sensitive to the normality assumption of the differences between pairs.
+    The paired t-test is appropriate for comparing two means from the same group or individual under two different
+    conditions. The test statistic is calculated by dividing the mean difference between paired observations by the
+    standard error of the mean difference. The test is sensitive to the normality assumption of the differences between
+    pairs.
     """
 
     if dataset.shape[1] != 2:
@@ -55,19 +56,16 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
     s_d = math.sqrt((sum_d_2 - (sum_d ** 2) / num_samples) / (num_samples - 1))
     s_d = s_d / math.sqrt(num_samples)
     statistical_t = mean_d / s_d
-    # TODO FALLA EL P-VALOR DEBIDO A QUE LA FUNCIÓN ACTUAL NO ES LA ADECUADA
-    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp2f1.html#r633ce8001a03-4
-    # https://en.wikipedia.org/wiki/Student%27s_t-distribution REVISAR LA FORMULA CDF
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
-    p_value = stats.get_p_value_t(statistical_t, num_samples - 1)
-
+    p_value = 2 * stats.get_p_value_t(statistical_t, num_samples - 1)
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if statistical_t < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
 
     if verbose is True:
         print(statistical_t, rejected_value, p_value, hypothesis)
-    return statistical_t, rejected_value, p_value, hypothesis
+
+    return statistical_t, p_value, rejected_value, hypothesis
 
 
 def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
@@ -91,10 +89,10 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
     -------
     statistical_t : float
         The t-test statistic. A higher absolute value indicates a greater difference between the group means.
-    rejected_value : float
-        The critical value for the test at the specified alpha level.
     p_value : float
         The p-value for the hypothesis test (currently not calculated and set to None).
+    rejected_value : float
+        The critical value for the test at the specified alpha level.
     hypothesis : str
         A string stating the conclusion of the test based on the test statistic and alpha. It indicates whether the null 
         hypothesis (no difference between means) can be rejected or not.
@@ -125,8 +123,8 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
 
     statistical_t = (x_1_mean - x_2_mean) / math.sqrt(s_1 / num_samples + s_2 / num_samples)
 
-    rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
-    p_value = stats.get_p_value_t(statistical_t, num_samples - 1)
+    rejected_value = stats.get_cv_t_distribution(num_samples * 2 - 2, alpha=alpha)
+    p_value = 2 * stats.get_p_value_t(statistical_t, num_samples * 2 - 2)
     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
     if statistical_t < rejected_value:
         hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
@@ -134,7 +132,7 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
     if verbose is True:
         print(statistical_t, rejected_value, p_value, hypothesis)
 
-    return statistical_t, rejected_value, p_value, hypothesis
+    return statistical_t, p_value, rejected_value, hypothesis
 
 
 def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
@@ -200,7 +198,6 @@ def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
 
     statistical_f_anova = ms_bg / ms_wg
 
-    # p_value = stats.get_cv_f_distribution(num_groups, num_samples[0] - num_groups, alpha=alpha)
     rejected_value = stats.get_cv_f_distribution(df_bg, df_wg, alpha=alpha)
     p_value = stats.get_p_value_f(statistical_f_anova, df_bg, df_wg)
 
@@ -250,7 +247,8 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
         A DataFrame with the ANOVA results, including degrees of freedom, sum of squares, mean square, F-statistic, 
         and rejected value for different sources of variance (between conditions, between subjects, etc.).
     statistical_f_anova : float
-        The F-statistic for the ANOVA test. A higher value suggests a significant difference between conditions or treatments.
+        The F-statistic for the ANOVA test. A higher value suggests a significant differensce between conditions or
+        treatments.
     p_value : float
         The p-value for the hypothesis test (currently not calculated and set to None).
     rejected_value : float
