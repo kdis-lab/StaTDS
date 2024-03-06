@@ -30,6 +30,7 @@ properties = {"title-header": "Inform elaborated with StaTDS",
               "ref-library": "https://github.com/kdis-lab/StaTDS"}
 
 available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
+                                  "Friedman + Iman Davenport": no_parametrics.iman_davenport,
                                   "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                                   "Quade": no_parametrics.quade,
                                   "Kruskal-Wallis": no_parametrics.kruskal_wallis,
@@ -369,7 +370,6 @@ def analysis_of_experiments(dataset, experiments: dict, generate_pdf: bool = Fal
         if "alpha" not in info_experiment.keys():
             raise LibraryError("Error: alpha argument dont found")
 
-        print(info_experiment.keys())
         if multigroup_test and "minimize" not in info_experiment.keys():
             raise LibraryError("Error: criterion argument dont found")
 
@@ -483,7 +483,7 @@ def process_alpha_experiment(parameter):
     available_alpha = [0.1, 0.05, 0.025, 0.01, 0.005, 0.001]
     name_test_two_groups = ["Wilcoxon", "Binomial Sign", "Mann-Whitney U", "T-Test paired", "T-Test unpaired"]
     name_test_multiple_groups = ["Friedman", "Friedman Aligned Ranks", "Quade", "ANOVA between cases",
-                                 "ANOVA within cases", "Kruskal-Wallis"]
+                                 "ANOVA within cases", "Kruskal-Wallis", "Friedman + Iman Davenport"]
 
     struct = {}
 
@@ -513,7 +513,6 @@ def process_alpha_experiment(parameter):
         struct["post_hoc"] = parameter["post_hoc"] if "post_hoc" in parameter.keys() else None
         struct["control"] = parameter["control"] if "control" in parameter.keys() else None
 
-    print("hola", struct)
     return struct
 
 

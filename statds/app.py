@@ -214,7 +214,7 @@ def generate_home_page(dataframe: pd.DataFrame):
          "description": "graduated in Computer Science with honors at the University of Córdoba (Spain) in 2023. He "
                         "is currently studying the Master's Degree in Research in Artificial Intelligence | AEPIA, "
                         "while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group.",
-         "email": "i82luesc@uco.es", "image": "https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/i82luesc.png"},
+         "email": "c.luna@uco.es", "image": "https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/i82luesc.png"},
         {"title": "Antonio Rafael Moya Martín-Castaño",
          "description": "is currently a Substitute Professor of Computing Sciences and Numerical Analysis at the University " 
                         "of Córdoba, while working in the Knowledge Discovery and Intelligent Systems (KDIS) research group. "
@@ -271,7 +271,7 @@ def generate_home_page(dataframe: pd.DataFrame):
             html.Div([
                 dbc.ButtonGroup([
                     dbc.Button([html.Img(src='https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-send-email.png', className="icon_button"),
-                                "Contact email"], href="mailto:i82luesc@uco.es?cc=sventura@uco.es&subject=StaTDS",
+                                "Contact email"], href="mailto:c.luna@uco.es?cc=sventura@uco.es&subject=StaTDS",
                                className="button", color="secondary", outline=True),
                     dbc.Button([html.Img(src='https://raw.githubusercontent.com/kdis-lab/StaTDS/main/statds/assets/images/logo-github.png', className="icon_button"),
                                 "Source on Github"], href="https://github.com/kdis-lab/StaTDS",
@@ -504,10 +504,14 @@ def create_test_form(columns: list, title: str, test_two_groups: list, test_mult
             html.H3("Non-Parametrics Test"),
             html.H5("Friedman"),
             dcc.Markdown('''The Friedman Test is a non-parametric statistical method used for comparing and ranking multiple data sets. It calculates rankings for each set and evaluates the results using a chi-squared distribution. The degrees of freedom for this distribution are determined by $$K−1$$, where $$K$$ represents the number of related variables, such as the number of algorithms being compared. ''', mathjax=True),
+            html.H5("Friedman + Iman Davenport"),
+            dcc.Markdown('''The Friedman test, combined with the Iman-Davenport correction, offers a robust non-parametric alternative for analyzing repeated measures designs and comparing multiple algorithms or treatments. The Friedman test assesses the differences in rankings across related samples or matched groups. When the Friedman test indicates significant differences, the Iman-Davenport correction is applied to adjust the test statistic, providing a more accurate p-value. This correction accounts for the inherent conservatism of the Friedman test, making the results more reliable, especially with a small sample size or when dealing with datasets that violate the assumptions of parametric tests.''', mathjax=True),
             html.H5("Friedman Aligned Ranks"),
             dcc.Markdown('''Friedman's Aligned Ranks Test, an extension of the Friedman Test, also compares and assigns rankings across all data sets. This test is particularly useful when dealing with a smaller number of algorithms in the comparison. It provides a more comprehensive view by considering the collective performance of all sets.''', mathjax=True),
             html.H5("Quade"),
             dcc.Markdown('''The Quade Test, while similar in function to the Iman-Davenport Test, incorporates a unique aspect. It accounts for the varying difficulty levels of problems or for the more pronounced discrepancies in results obtained from different algorithms. This is achieved through a weighting process, which adds an extra layer of analysis, especially beneficial in scenarios where algorithms perform inconsistently across different types of problems.''', mathjax=True),
+            html.H5("Kruskal-Wallis"),
+            dcc.Markdown('''The Kruskal-Wallis Test is a non-parametric statistical method used for comparing medians across multiple independent groups. Unlike traditional ANOVA, it does not assume a normal distribution, making it suitable for ordinal or non-normally distributed data. The test calculates the ranks of all data points and evaluates whether the medians of the groups are significantly different, based on the sum of these ranks. It's particularly useful when dealing with three or more groups and provides an alternative to the one-way ANOVA when the data violates its assumptions.''', mathjax=True),
             html.H3("Post-hoc"),
             html.P("Once a Multiple Comparisons analysis has been performed, if significant differences arise after "
                    "concluding, post-hoc tests are necessary. Post-hoc tests determine where our differences come from,"
@@ -737,6 +741,7 @@ def change_page(pathname: str, dataframe: pd.DataFrame, columns: list, user_expe
 
     multiple_groups_test_no_parametrics = [
         {'label': "Friedman", 'value': "Friedman"},
+        {'label': "Friedman + Iman Davenport", 'value': "Friedman + Iman Davenport"},
         {'label': "Friedman Aligned Ranks", 'value': "Friedman Aligned Ranks"},
         {'label': "Quade", 'value': "Quade"},
         {'label': "Kruskal-Wallis", 'value': "Kruskal-Wallis"},
@@ -872,6 +877,7 @@ def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
     if columns[0] is None:
         return
     available_test = {"Friedman": no_parametrics.friedman,
+                      "Friedman + Iman Davenport": no_parametrics.iman_davenport,
                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                       "Quade": no_parametrics.quade,
                       "Kruskal-Wallis": no_parametrics.kruskal_wallis,
@@ -1045,6 +1051,7 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
         return html.Div(""), "", None, export_modal, name_file_pdf
     # TODO
     available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
+                                      "Friedman + Iman Davenport": no_parametrics.iman_davenport,
                                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
                                       "Quade": no_parametrics.quade,
                                       "Kruskal-Wallis": no_parametrics.kruskal_wallis,
@@ -1060,10 +1067,8 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
     parametrics_test = ["T-Test paired", "T-Test unpaired", "ANOVA between cases", "ANOVA within cases"]
 
     names_experiments, parameter_experiments = user_experiments[0], user_experiments[1]
-    print(parameter_experiments)
     df = pd.DataFrame(current_session)
     experiments = utils.generate_json(names_experiments, parameter_experiments)
-    print(experiments)
     if generate_pdf:
         current_datetime = datetime.now()
         current_datetime = current_datetime.strftime("%Y%m%d_%H%M%S")

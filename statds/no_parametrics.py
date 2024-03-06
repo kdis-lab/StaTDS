@@ -444,9 +444,9 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = 
 
     p_value = stats.get_p_value_f(f_f, num_algorithm-1, (num_algorithm - 1)*(num_cases-1))
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
     if p_value < alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
     critical_value = None
     return rankings, f_f, p_value, critical_value, hypothesis
@@ -1080,13 +1080,12 @@ def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
 
 def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control: str = None,
                         type_rank: str = "Friedman"):
-    print(control)
     all_vs_all = control is None
-    print(all_vs_all)
     algorithm_names = list(ranks.keys())
     index_control = 0 if all_vs_all else algorithm_names.index(control)
     ranks_values = [ranks[i] for i in ranks.keys()]
     available_ranks = {"Friedman": _calculate_z_friedman,
+                       "Friedman + Iman Davenport": _calculate_z_friedman,
                        "Friedman Aligned Ranks": _calculate_z_friedman_aling,
                        "Quade": _calculate_z_quade
                        }
@@ -1099,7 +1098,6 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
     calculate_z = available_ranks[type_rank]
 
     if all_vs_all:
-        print("HOLA")
         for i in range(len(algorithm_names)):
             for j in range(i+1, len(algorithm_names)):
                 comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
@@ -1114,7 +1112,6 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
                 p_value = 2 * stats.get_p_value_normal(z_bonferroni)
                 results.append((comparisons, z_bonferroni, p_value))
 
-    print(results)
     return results
 
 
