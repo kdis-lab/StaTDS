@@ -39,8 +39,10 @@ In detail, the package provide:
    - Binomial Sign. :func:`statds.no_parametrics.binomial`
    - Mann-Whitney U. :func:`statds.no_parametrics.mannwhitneyu`
    - Friedman. :func:`statds.no_parametrics.friedman`
+   - Friedman + Iman Davenport. :func:`statds.no_parametrics.iman_davenport`
    - Friedman Aligned Ranks. :func:`statds.no_parametrics.friedman_aligned_ranks`
    - Quade. :func:`statds.no_parametrics.quade`
+   - Kruskal-Wallis. :func:`statds.no_parametrics.kruskal_wallis`
 
 **Post-hoc**
 ++++++++++++

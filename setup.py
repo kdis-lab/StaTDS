@@ -20,7 +20,7 @@ install_requires = [
 ]
 
 extras_require = {
-    'generate_pdf': [
+    'pdf': [
         'fpdf2==2.7.5',  
     ],
     'full-app': [
@@ -38,7 +38,7 @@ setup(
     name='statds',
 
     # Version
-    version='1.1.1',
+    version='1.1.3',
 
     # Description
     description='Library for statistical testing and comparison of algorithm results',
@@ -78,3 +78,4 @@ setup(
     extras_require=extras_require,
     long_description_content_type='text/markdown'
 )
+
