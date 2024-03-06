@@ -1080,8 +1080,9 @@ def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
 
 def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control: str = None,
                         type_rank: str = "Friedman"):
-    
+    print(control)
     all_vs_all = control is None
+    print(all_vs_all)
     algorithm_names = list(ranks.keys())
     index_control = 0 if all_vs_all else algorithm_names.index(control)
     ranks_values = [ranks[i] for i in ranks.keys()]
@@ -1098,6 +1099,7 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
     calculate_z = available_ranks[type_rank]
 
     if all_vs_all:
+        print("HOLA")
         for i in range(len(algorithm_names)):
             for j in range(i+1, len(algorithm_names)):
                 comparisons = algorithm_names[i] + " vs " + algorithm_names[j]
@@ -1112,6 +1114,7 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
                 p_value = 2 * stats.get_p_value_normal(z_bonferroni)
                 results.append((comparisons, z_bonferroni, p_value))
 
+    print(results)
     return results
 
 
@@ -1584,7 +1587,7 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     results_comp = prepare_comparisons(ranks, num_algorithm, num_cases, control, type_rank)
 
     comparisons, z_bonferroni, p_values = zip(*results_comp)
-
+    num_of_comparisons = len(comparisons)
     # Adjusted alpha and p_values
     length = len(p_values)
     adj_alphas = [0.0] * length
@@ -1598,11 +1601,21 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
         sum_factor_2 = sum(math.comb(i, j) * (adj_alphas[(length - 2) - j] ** (i-j)) for j in range(1, i-2))
         adj_alphas[length - i] = (sum_factor_1 - sum_factor_2) / float(i)
         adj_p_values[length - i] = adj_alphas[length - 1] / adj_alphas[length - i]
+    """
     indices_sorted = sorted(range(len(p_values)), key=lambda x: p_values[x])
-
+    # TODO Revisar Antiguo
     adj_p_values = [[r * p_values[p], p] for p, r in zip(indices_sorted, adj_p_values)]
     for i in range(len(adj_p_values)-2, -1, -1):
         adj_p_values[i][0] = min(adj_p_values[i][0], adj_p_values[i + 1][0])
+
+    """
+
+    p_values_with_index = list(enumerate(p_values))
+    # El cambio realizado es invertir el orden de los p-valores para que el mayor tenga el menor de los pesos
+    p_values_with_index = list(reversed(sorted(p_values_with_index, key=lambda x: x[1])))
+    adj_p_values = [[min(max(adj_p_values[num_of_comparisons-j] * p_values_with_index[j - 1][1] for j in
+                             range(num_of_comparisons, i, -1)), 1), p_values_with_index[i][0]] for i in
+                    range(num_of_comparisons)]
 
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
@@ -1610,7 +1623,6 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
     alphas = [alpha] * len(adj_alphas)
     # Create Struct
     results = create_dataframe_results(comparisons, z_bonferroni, p_values, alphas, adj_p_values, adj_alphas)
-
     if verbose:
         print(results)
 
@@ -1758,13 +1770,20 @@ def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = No
     adj_alphas = [(alpha * (index + 1) / num_of_comparisons, value[0]) for index, value in
                   enumerate(p_values_with_index)]
 
-    adj_p_values = [[(num_of_comparisons - index) * value[1], value[0]] for index, value in
-                    enumerate(p_values_with_index)]
     adj_alphas = sorted(adj_alphas, key=lambda x: x[1])
     adj_alphas, _ = zip(*adj_alphas)
 
+    """ 
+    # TODO Revisar Antiguo
+    adj_p_values = [[(num_of_comparisons - index) * value[1], value[0]] for index, value in
+                    enumerate(p_values_with_index)]
+
     for i in range(len(adj_p_values) - 2, -1, -1):
         adj_p_values[i][0] = min(adj_p_values[i][0], adj_p_values[i + 1][0])
+    """
+    adj_p_values = [[min(max((num_of_comparisons + 1 - j) * p_values_with_index[j-1][1] for j in
+                             range(num_of_comparisons, i, -1)), 1), p_values_with_index[i][0]] for i in
+                    range(num_of_comparisons)]
 
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
@@ -1841,8 +1860,8 @@ def shaffer(ranks: dict, num_cases: int, alpha: float = 0.05, type_rank: str = "
 
     p_values_with_index = list(enumerate(p_values))
     p_values_with_index = sorted(p_values_with_index, key=lambda x: x[1])
-    adj_p_values = [(min(max(t[j] * p_values_with_index[j][1] for j in range(i + 1)), 1), p_values_with_index[0]) for i
-                    in range(m)]
+    adj_p_values = [(min(max(t[j] * p_values_with_index[j][1] for j in range(i + 1)), 1), p_values_with_index[i][0])
+                    for i in range(m)]
     adj_p_values = sorted(adj_p_values, key=lambda x: x[1])
     adj_p_values, _ = zip(*adj_p_values)
 
