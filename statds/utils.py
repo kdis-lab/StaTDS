@@ -26,7 +26,7 @@ class LibraryError(Exception):
 
 
 properties = {"title-header": "Inform elaborated with StaTDS",
-              "subtitle-header": "Version 1.1.3",
+              "subtitle-header": "Version 1.1.4",
               "ref-library": "https://github.com/kdis-lab/StaTDS"}
 
 available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
