@@ -43,8 +43,10 @@ StaTDS is a library for mathematicians, scientists, and engineers. It includes v
 | Binomial Sign               | no_parametrics.binomial               | Paired           |
 | Mann-Whitney U              | no_parametrics.mannwhitneyu           | Paired           |
 | Friedman                    | no_parametrics.friedman               | Multiple         |
+| Friedman + Iman-Davenport   | no_parametrics.iman_davenport         | Multiple         |
 | Friedman Aligned Ranks      | no_parametrics.friedman_aligned_ranks | Multiple         |
 | Quade                       | no_parametrics.quade                  | Multiple         |
+| Kruskal-Wallis              | no_parametrics.kruskal_wallis         | Multiple         |
 
 
 ##### **Post-hoc**
@@ -60,7 +62,7 @@ StaTDS is a library for mathematicians, scientists, and engineers. It includes v
 | Hochberg                    | no_parametrics.hochberg               |
 | Hommel                      | no_parametrics.hommel                 |
 | Rom                         | no_parametrics.rom                    |
-| Schaffer                    | no_parametrics.shaffer                |
+| Shaffer                     | no_parametrics.shaffer                |
 
 ## Developed in:
 ![Python](https://img.shields.io/badge/Python-yellow?style=for-the-badge&logo=python&logoColor=white&labelColor=101010)
