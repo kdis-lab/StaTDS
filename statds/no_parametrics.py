@@ -657,7 +657,8 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, ve
     if stadistic_a - stadistic_b > 0.0000000001:
         stadistic_quade = (num_cases - 1) * stadistic_b / (stadistic_a - stadistic_b)
         p_value = stats.get_p_value_f(stadistic_quade, num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1))
-        if p_value < alpha:  # valueFriedman < p(alpha >= chi^2)
+        critical_value = stats.get_cv_f_distribution(num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1), alpha)
+        if p_value < alpha:
             hypothesis_state = False
     else:
         p_value = math.pow((1 / float(math.factorial(num_algorithm))), num_cases - 1)
