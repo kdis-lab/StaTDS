@@ -91,9 +91,9 @@ def levene_test(dataset: pd.DataFrame, alpha: float = 0.05, center: str = 'mean'
     rejected_value = stats.get_cv_f_distribution(num_groups - 1, num_samples[0] - num_groups, alpha=alpha)
     p_value = stats.get_p_value_f(statistic_levene, num_groups - 1, num_total - num_groups)
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if statistic_levene < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
+    if p_value > alpha:
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha}(Same distributions)"
 
     return statistic_levene, p_value, rejected_value, hypothesis
 
@@ -161,9 +161,8 @@ def bartlett_test(dataset: pd.DataFrame, alpha: float = 0.05):
 
     p_value, cv_value = stats.get_p_value_chi2(statistical_bartlett, num_groups - 1, alpha=alpha)
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different Variances)"
     if p_value > alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same Variances)"
 
     return statistical_bartlett, p_value, cv_value, hypothesis

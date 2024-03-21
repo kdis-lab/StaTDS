@@ -24,11 +24,12 @@ extras_require = {
         'fpdf2==2.7.5',  
     ],
     'full-app': [
-        'dash==2.13.0',
+        'dash==2.16.1',
         'dash_bootstrap_components==1.4.2',
         'dash_daq==0.5.0',
         'dash_ag_grid==2.3.0',
-        'fpdf2==2.7.5'
+        'fpdf2==2.7.5',
+        'flash==2.2.5'
     ]
 }
 
@@ -38,7 +39,7 @@ setup(
     name='statds',
 
     # Version
-    version='1.1.4',
+    version='1.1.5',
 
     # Description
     description='Library for statistical testing and comparison of algorithm results',

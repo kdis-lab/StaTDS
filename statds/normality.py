@@ -4,7 +4,6 @@ import math
 
 from . import stats
 
-
 # ANALYTICAL METHODS
 
 
@@ -45,9 +44,9 @@ def shapiro_wilk_normality(data: np.array, alpha: float = 0.05):
 
     p_value, cv_value = pw, None
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if p_value > alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha}(Same distributions)"
     return statistics_w, p_value, cv_value, hypothesis
 
 
@@ -270,9 +269,9 @@ def d_agostino_pearson(data: np.array, alpha: float = 0.05):
 
     # Calculate p-value with chi^2 with 2 degrees of freedom
     p_value, cv_value = stats.get_p_value_chi2(statistic_dp, 2, alpha=alpha)
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
-    if p_value >= alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
+    if p_value > alpha:
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha}(Same distributions)"
 
     return statistic_dp, p_value, cv_value, hypothesis
 
@@ -331,12 +330,11 @@ def kolmogorov_smirnov(data: np.array, alpha: float = 0.05):
     # Calcular el estadístico de Kolmogorov-Smirnov (KS)
     ks_statistic = d_max
 
-    # https://radzion.com/blog/probability/kolmogorov
     p_value = stats.kolmogorov_p_value(ks_statistic, n)
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if p_value > alpha:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha}(Same distributions)"
     cv_value = None
 
     return ks_statistic, p_value, cv_value, hypothesis
@@ -692,14 +690,6 @@ def _swilk(x: np.array, a: np.array, init=False, n1=-1):
 
     # Calculate significance level for W (exact for N=3)
     if n == 3:
-        # Original Fortran code computation was below
-        #
-        # pw = PI6 * (asin(sqrt(w)) - PI_OVER_3)
-        #
-        # However this can return negative p-values for N==3;
-        # see gh-18322 and also 32-bit Linux systems.
-        # Thus, a potential improvement: precision for small p-values
-        # Theoretically w >= 0.75, hence clamping the value
         if w < 0.75:
             return 0.75, 0., ifault
         else:

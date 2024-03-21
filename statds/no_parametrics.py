@@ -57,12 +57,10 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     absolute_dif = absolute_dif.sort_values()
     results_wilconxon = {"index": [], "dif": [], "rank": [], "R": []}
     rank = 0.0
-    # Esto se deberá de arreglar para cuando se repitan valores en las diferencias
     tied_ranges = not (len(set(absolute_dif)) == absolute_dif.shape[0])
     for index in absolute_dif.index:
         if math.fabs(0 - absolute_dif[index]) < 1e-10:
-            # Se continua con el siguiente
-            continue  # Debido a que la diferencia entre ambos algoritmos es 0 y no se debe de tener en cuenta.
+            continue
         rank += 1.0
         results_wilconxon["index"] += [index]
         results_wilconxon["dif"] += [differences_results[index]]
@@ -77,7 +75,6 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     tie_sum = 0
 
     if tied_ranges:
-        # Realizar el calculo de los rangos teniendo en cuenta que se comparten valores
         vector = [abs(i) for i in results_table["dif"]]
 
         counts = {}
@@ -95,7 +92,6 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
                 for i, x in enumerate(vector):
                     if x == number:
                         ranks[i] = average_rank
-    # tie_sum para aplicar la correción en caso de empates
         tie_sizes = np.array(list(counts.values()))
         tie_sum = (tie_sizes ** 3 - tie_sizes).sum()
 
@@ -108,24 +104,19 @@ def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False)
     w_wilcoxon = min([r_plus, r_minus])
     num_problems = results_table.shape[0] - (results_table.R.isna().sum())
     mean_wilcoxon = (num_problems * (num_problems + 1)) / 4.0
-    # Si se desea realizar la correción por continuidad debemos de restarle 0.5 a abs(w_wilcoxon - mean_wilcoxon)
+
     std_wilcoxon = num_problems * (num_problems + 1) * ((2 * num_problems) + 1)
     std_wilcoxon = math.sqrt(std_wilcoxon / 24.0 - (tie_sum / 48))
     z_wilcoxon = (w_wilcoxon - mean_wilcoxon) / std_wilcoxon
-    # Se debe de utilizar las tablas con los valores críticos
 
     cv_alpha_selected = stats.get_cv_willcoxon(num_problems, alpha)
-
-    # hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
-    # if w_wilcoxon <= cv_alpha_selected:
-    #     hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
 
     p_value = 2 * stats.get_p_value_normal(z_wilcoxon)
 
     # if num_problems > 25:
-    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
     if p_value < alpha:
-        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+        hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
 
     return w_wilcoxon, p_value, cv_alpha_selected, hypothesis
 
@@ -192,9 +183,9 @@ def binomial(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     # Calculate the p-value of binomial distribution
     p_value = stats.get_p_value_binomial(num_samples, statistical_binomial)
 
-    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
     if p_value < alpha:
-        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+        hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     cv_value = None
 
     return statistical_binomial, p_value, cv_value, hypothesis
@@ -269,16 +260,15 @@ def mannwhitneyu(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fal
 
     denominator = math.sqrt(n1*n2/12 * ((n + 1) - tie_sum/(n*(n-1))))
 
-    # TODO CORRECCION DE CONTINUIDAD
     numerator = abs(numerator) - 0.5
 
     z_value = numerator / denominator
 
     p_value = 2 * stats.get_p_value_normal(z_value)
 
-    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
     if p_value < alpha:
-        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+        hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     cv_value = None
 
     return u2, p_value, cv_value, hypothesis
@@ -386,9 +376,9 @@ def friedman(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False,
         if stadistic_friedman <= critical_value:  # valueFriedman < p(alpha >= chi^2)
             hypothesis_state = False
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if hypothesis_state:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     return rankings_with_label, stadistic_friedman, p_value, critical_value, hypothesis
 
@@ -444,9 +434,9 @@ def iman_davenport(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = 
 
     p_value = stats.get_p_value_f(f_f, num_algorithm-1, (num_algorithm - 1)*(num_cases-1))
 
-    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
     if p_value < alpha:
-        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+        hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
 
     critical_value = None
     return rankings, f_f, p_value, critical_value, hypothesis
@@ -508,10 +498,7 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, minimize:
 
     aligned_observations = sorted(df[columns_names].values.flatten().tolist())
     aligned_observations = list(reversed(aligned_observations)) if not minimize else aligned_observations
-    # criterion El criterio por defecto es minimizar
     df_aligned = df.copy()
-    # TODO HABLARLO -> he tenido que poner criterio inverso
-    # print(aligned_observations)
     for index in df.index:
         for algorith in columns_names:
             v = df.loc[index][algorith]
@@ -522,18 +509,10 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, minimize:
     ranks_i = df[columns_names].sum(axis=1)
     ranks_i = (ranks_i ** 2).sum()
     sum_ranks_j = sum(ranks_j)
-    # TODO ESTO ES LO QUE ESTABA ANTES Esto no se porque estaba Revisar
-    # CONSULTAR -> TENIENDO ESTA LINEA Y CAMBIANDO LA LINEAS SIGUIENTES SALE LO MISMO QUE EN EL ARTICULO
-    # (YA QUE SE SIGUEN LAS MISMAS FORMULAS)
-    # sum_ranks_j /= num_algorithm
     numerator = ((num_algorithm - 1) * (sum_ranks_j - ((num_algorithm * (num_cases ** 2) / 4.0) *
                                                        (num_algorithm * num_cases + 1) ** 2)))
 
     denominator = (num_algorithm * num_cases * (num_algorithm*num_cases + 1) * (2 * num_algorithm * num_cases + 1)) / 6
-    # TODO ESTO ES LO QUE ESTABA ANTES
-    # ESTAS SON LAS LINEAS QUE ME REFIERO SI COMENTAMOS ESTAS LINEAS Y PONEMOS LO OTRO SALE LO MISMO QUE LAS OTRAS
-    # LIBRERIAS
-    # denominator = denominator - ranks_i
     denominator = denominator - (ranks_i / num_algorithm)
     stadistic_friedman = numerator / denominator
 
@@ -541,7 +520,6 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, minimize:
     rankings_with_label = {j: i for i, j in zip(ranks, columns_names)}
 
     if verbose:
-        #  Se podría concatenar estas columnas al dataframe anterior para tener en una sola todos los valores
         print(df_aligned)
         print(df[columns_names])
         print(stadistic_friedman)
@@ -558,9 +536,9 @@ def friedman_aligned_ranks(dataset: pd.DataFrame, alpha: float = 0.05, minimize:
         if stadistic_friedman <= critical_value:  # valueFriedman < p(alpha >= chi^2)
             hypothesis_state = False
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if hypothesis_state:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     return rankings_with_label, stadistic_friedman, p_value, critical_value, hypothesis
 
@@ -636,8 +614,6 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, ve
     for index in df.index:
         row = np.array(df.loc[index][columns_names].values)
         r = df.loc[index]["Rank_Q_i"]
-        # relative_size.append(list(r * (row - (num_algorithm + 1)//2))) Tenia division exacta
-        # TODO ESTO ES LO QUE HACIA QUE SALGAN DIFERENTES LAS COSAS
         relative_size.append(list(r * (row - (num_algorithm + 1) / 2)))
         rankings_without_average_adjusting.append(list(row * r))
 
@@ -666,9 +642,9 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, ve
 
     # Si A = B se considera un región critical en la distribución estadística, y se calcula el p-valor como (1/k!)^n-1
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if hypothesis_state:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     if verbose:
         print(df)
@@ -768,9 +744,9 @@ def kruskal_wallis(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = 
     if verbose:
         print(data)
 
-    hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+    hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
     if p_value < alpha:
-        hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+        hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
 
     return statistic_kruskal, p_value, critical_value, hypothesis
 
@@ -1026,7 +1002,6 @@ def _calculate_z_friedman(rank_i: float, rank_j: float, num_algorithm: int, num_
 
 
 def _calculate_z_friedman_aling(rank_i: float, rank_j: float, num_algorithm: int, num_cases: int):
-    # TODO Revisar
     # return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases + 1)) / 6))
     return abs(rank_i - rank_j) / (math.sqrt((num_algorithm * (num_cases * num_algorithm + 1)) / 6))
 
@@ -1038,7 +1013,6 @@ def _calculate_z_quade(rank_i: float, rank_j: float, num_algorithm: int, num_cas
 
 def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
     columns = ["Comparison", "p-value", "Adjusted alpha"]
-    # columns = ["Comparison", "Adjusted p-value", "alpha"]
     content = data[columns].to_numpy()
 
     if all_vs_all is False:
@@ -1057,7 +1031,6 @@ def generate_graph_p_values(data: pd.DataFrame, name_control, all_vs_all):
     thresholds = [thresholds[0]] + list(thresholds) + [thresholds[-1]]
 
     possitions = [i - 0.5 for i in range(len(thresholds))]
-    # plt.figure(figsize=(num_alg, 5))
 
     plt.grid(axis='y')
 
@@ -1119,8 +1092,8 @@ def prepare_comparisons(ranks: dict, num_algorithm: int, num_cases: int, control
 def create_dataframe_results(comparisons: list, z_statistics: list, p_values: list, alphas: list, adj_p_values: list,
                              adj_alphas: list):
 
-    results_h0 = ["H0 is accepted" if p_value > alpha else "H0 is rejected" for p_value, alpha in zip(p_values,
-                                                                                                      adj_alphas)]
+    results_h0 = ["Fail to Reject H0" if p_value > alpha else "Reject H0" for p_value, alpha in zip(p_values,
+                                                                                                    adj_alphas)]
 
     results = pd.DataFrame({"Comparison": comparisons, "Statistic (Z)": z_statistics, "p-value": p_values,
                             "Adjusted alpha": adj_alphas, "Adjusted p-value": adj_p_values, "alpha": alphas,
@@ -1599,14 +1572,6 @@ def rom(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = None,
         sum_factor_2 = sum(math.comb(i, j) * (adj_alphas[(length - 2) - j] ** (i-j)) for j in range(1, i-2))
         adj_alphas[length - i] = (sum_factor_1 - sum_factor_2) / float(i)
         adj_p_values[length - i] = adj_alphas[length - 1] / adj_alphas[length - i]
-    """
-    indices_sorted = sorted(range(len(p_values)), key=lambda x: p_values[x])
-    # TODO Revisar Antiguo
-    adj_p_values = [[r * p_values[p], p] for p, r in zip(indices_sorted, adj_p_values)]
-    for i in range(len(adj_p_values)-2, -1, -1):
-        adj_p_values[i][0] = min(adj_p_values[i][0], adj_p_values[i + 1][0])
-
-    """
 
     p_values_with_index = list(enumerate(p_values))
     # El cambio realizado es invertir el orden de los p-valores para que el mayor tenga el menor de los pesos
@@ -1771,14 +1736,6 @@ def hochberg(ranks: dict, num_cases: int, alpha: float = 0.05, control: str = No
     adj_alphas = sorted(adj_alphas, key=lambda x: x[1])
     adj_alphas, _ = zip(*adj_alphas)
 
-    """ 
-    # TODO Revisar Antiguo
-    adj_p_values = [[(num_of_comparisons - index) * value[1], value[0]] for index, value in
-                    enumerate(p_values_with_index)]
-
-    for i in range(len(adj_p_values) - 2, -1, -1):
-        adj_p_values[i][0] = min(adj_p_values[i][0], adj_p_values[i + 1][0])
-    """
     adj_p_values = [[min(max((num_of_comparisons + 1 - j) * p_values_with_index[j-1][1] for j in
                              range(num_of_comparisons, i, -1)), 1), p_values_with_index[i][0]] for i in
                     range(num_of_comparisons)]
@@ -1911,9 +1868,9 @@ def mcnemar(results_1, results_2, real_results, alpha: float = 0.05, verbose: bo
         print(f"McNemar statistic: {mcnemar_statistic}, CV McNemar with alpha {alpha}: {cv_mcnemar}")
 
     if p_value < alpha:
-        print(f"Different distributions (reject H0) with alpha {alpha}")
+        print(f"Reject H0 with alpha = {alpha} (Different distributions)")
     else:
-        print(f"Same distributions (fail to reject H0) with alpha {alpha}")
+        print(f"Fail to Reject H0 with alpha = {alpha} (Same distributions)")
 
 
 def multiple_sign_test(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, verbose: bool = False):

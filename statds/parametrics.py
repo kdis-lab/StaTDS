@@ -58,9 +58,9 @@ def t_test_paired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = Fa
     statistical_t = mean_d / s_d
     rejected_value = stats.get_cv_t_distribution(num_samples - 1, alpha=alpha)
     p_value = 2 * stats.get_p_value_t(statistical_t, num_samples - 1)
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if statistical_t < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     if verbose is True:
         print(statistical_t, rejected_value, p_value, hypothesis)
@@ -125,9 +125,9 @@ def t_test_unpaired(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = 
 
     rejected_value = stats.get_cv_t_distribution(num_samples * 2 - 2, alpha=alpha)
     p_value = 2 * stats.get_p_value_t(statistical_t, num_samples * 2 - 2)
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if statistical_t < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     if verbose is True:
         print(statistical_t, rejected_value, p_value, hypothesis)
@@ -201,9 +201,9 @@ def anova_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     rejected_value = stats.get_cv_f_distribution(df_bg, df_wg, alpha=alpha)
     p_value = stats.get_p_value_f(statistical_f_anova, df_bg, df_wg)
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if statistical_f_anova < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()),
                         np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]
@@ -298,9 +298,9 @@ def anova_within_cases(dataset: pd.DataFrame, alpha: float = 0.05):
     rejected_value = stats.get_cv_f_distribution(df_bc, df_res, alpha=alpha)
     p_value = stats.get_p_value_f(statistical_f_anova, df_bc, df_res)
 
-    hypothesis = f"Different distributions (reject H0) with alpha {alpha}"
+    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     if statistical_f_anova < rejected_value:
-        hypothesis = f"Same distributions (fail to reject H0) with alpha {alpha}"
+        hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     summary_results = [(np.mean(dataset[i].to_numpy()), np.std(dataset[i].to_numpy()),
                         np.std(dataset[i].to_numpy()) / math.sqrt(int(dataset[i].shape[0]))) for i in names_groups]

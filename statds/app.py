@@ -12,6 +12,7 @@ from flask import Flask
 
 import multiprocessing
 from pathlib import Path
+import os
 
 from . import no_parametrics, parametrics, utils
 from . import normality, homoscedasticity
@@ -19,7 +20,7 @@ from . import normality, homoscedasticity
 current_directory = Path(__file__).resolve().parent
 external_stylesheets = [dbc.themes.BOOTSTRAP, "app/style.css",
                         'https://use.fontawesome.com/releases/v5.8.1/css/all.css']
-import os
+
 server = Flask(__name__)
 server.secret_key = 'test'
 my_root = os.getenv("WSGI_APPURL", "") + "/"
@@ -249,7 +250,6 @@ def generate_home_page(dataframe: pd.DataFrame):
     about_authors = [dbc.Card(i, className="mb-3 card", style={"width": "40em", "margin-right": "1em"}) for i in
                      row_authors]
     foother_authors = html.Div(about_authors, className="container_card")
-    # TODO CAMBIAR ESTO DE ARRIBA PARA QUE LOS AUTORES SALGAN UNO AL LADO DEL OTRO
     main_content = html.Div(
         children=[
             html.H1(children='StaTDS: Statistical Tests for Data Science', className="title-app"),
@@ -838,7 +838,7 @@ def results_two_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
     caption = f"Results {columns[0]} test (significance level of {alpha})"
     result, test_result_exportable = generate_table_and_textarea(data_results, "7em", caption)
-    # TODO FALTA PONER LA PARTE DE EXPORTA
+
     title = html.H3(f"Two Groups to {columns[1]} vs {columns[2]}", className="title")
     subtitle = html.H5(f"{columns[0]} test (significance level of {alpha})")
     content_to_export = [subtitle, test_result_exportable]
@@ -846,7 +846,6 @@ def results_two_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
 
 def prueba_paralelizada(args, queue):
-    # TODO Cambiar el nombre de esta función y los argumentos
     results = args[0](**args[1])
     object_result = []
     if type(results) is pd.DataFrame:
@@ -873,7 +872,7 @@ def generate_table_and_textarea(table_data, height, caption_text, id_val="textar
 def results_multiple_groups(data: pd.DataFrame, parameters: dict, alpha: float):
 
     columns = list(parameters.values())
-    # Se genera mediante la librería
+
     if columns[0] is None:
         return
     available_test = {"Friedman": no_parametrics.friedman,
@@ -1049,7 +1048,7 @@ def process_experiment(n_clicks, reset, user_experiments, current_session):
                    ]
     if reset:
         return html.Div(""), "", None, export_modal, name_file_pdf
-    # TODO
+
     available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                       "Friedman + Iman Davenport": no_parametrics.iman_davenport,
                                       "Friedman Aligned Ranks": no_parametrics.friedman_aligned_ranks,
@@ -1326,7 +1325,6 @@ def process_normality(n_clicks, reset, alpha, test_normality, test_homoscedastic
 
     dataset = pd.DataFrame(current_data)
     content, content_export = results_normality(dataset, alpha, test_normality, test_homoscedasticity)
-    # TODO PENSAR SI MERECE LA PENA PERMITIR GENERAR GRÁFICOS EN LA PARTE DE NORMALIDAD
 
     return html.Div(content), "", None, html.Div(content_export)
 

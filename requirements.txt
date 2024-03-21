@@ -3,10 +3,11 @@ numpy>=1.20
 matplotlib>=3.7
 
 # Para el generador de informes
-fpdf2>=2.7.5
+fpdf2==2.7.5
 
 # Para la aplicación
-dash==2.13.0
+dash==2.16.1
 dash_bootstrap_components==1.4.2
 dash_daq==0.5.0
 dash_ag_grid==2.3.0
+flash==2.2.5
