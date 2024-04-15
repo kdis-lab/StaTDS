@@ -195,9 +195,9 @@ from statds.no_parametrics import friedman
 dataset = pd.read_csv("dataset.csv")
 alpha = 0.05
 columns = list(dataset.columns)
-rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, criterion=False)
+rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, minimize=False)
 print(hypothesis)
-print(ff"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
+print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
 print(rankings)
 ```
 
@@ -208,7 +208,7 @@ from statds.no_parametrics import friedman, bonferroni
 dataset = pd.read_csv("dataset.csv")
 alpha = 0.05
 columns = list(dataset.columns)
-rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, criterion=False)
+rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, minimize=False)
 print(hypothesis)
 print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
 print(rankings)
@@ -225,7 +225,7 @@ from statds.no_parametrics import friedman, nemenyi
 dataset = pd.read_csv("dataset.csv")
 alpha = 0.05
 columns = list(dataset.columns)
-rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, criterion=False)
+rankings, statistic, p_value, critical_value, hypothesis = friedman(dataset, alpha, minimize=False)
 print(hypothesis)
 print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
 print(rankings)
