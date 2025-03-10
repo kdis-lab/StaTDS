@@ -175,13 +175,15 @@ print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value
 ```
 
 #### Non-parametrics tests: Wilcoxon
+
 ```python
-from statds.no_parametrics import wilconxon
+from statds.no_parametrics import wilcoxon
+
 dataset = pd.read_csv("dataset.csv")
 alpha = 0.05
 columns = list(dataset.columns)
 selected_columns = [columns[1], columns[2]]
-statistic, p_value, rejected_value, hypothesis = wilconxon(dataset[selected_columns], alpha)
+statistic, p_value, rejected_value, hypothesis = wilcoxon(dataset[selected_columns], alpha)
 print(hypothesis)
 print(f"Statistic {statistic}, Rejected Value {rejected_value}, p-value {p_value}")
 ```

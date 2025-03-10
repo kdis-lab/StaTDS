@@ -37,7 +37,7 @@ available_test_multiple_groups = {"Friedman": no_parametrics.friedman,
                                   "ANOVA between cases": parametrics.anova_cases,
                                   "ANOVA within cases": parametrics.anova_within_cases
                                   }
-available_test_two_groups = {"Wilcoxon": no_parametrics.wilconxon,
+available_test_two_groups = {"Wilcoxon": no_parametrics.wilcoxon,
                              "Binomial Sign": no_parametrics.binomial,
                              "Mann-Whitney U": no_parametrics.binomial,
                              "T-Test paired": parametrics.t_test_paired,

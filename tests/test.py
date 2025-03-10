@@ -153,7 +153,7 @@ class NoParametrics(unittest.TestCase):
             samples = [sample[i].to_numpy() for i in sample.columns]
             res = st.wilcoxon(*samples, method='approx')
             lib_statistic, lib_p_valor = res.statistic, res.pvalue
-            statistic, p_value, cv_alpha_selected, hypothesis = no_parametrics.wilconxon(self.data[keys])
+            statistic, p_value, cv_alpha_selected, hypothesis = no_parametrics.wilcoxon(self.data[keys])
             self.assertAlmostEqual(statistic, lib_statistic, delta=0.0001)
             self.assertAlmostEqual(p_value, lib_p_valor, delta=0.0001)
             # print(keys)

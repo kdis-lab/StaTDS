@@ -12,7 +12,7 @@ class LibraryError(Exception):
 
 
 # -------------------- Test Two Groups -------------------- #
-def wilconxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
+def wilcoxon(dataset: pd.DataFrame, alpha: float = 0.05, verbose: bool = False):
     """
     Perform the Wilcoxon signed-rank test. This non-parametric test is used to compare two related samples, matched
     samples, or repeated measurements on a single sample to assess whether their population mean ranks differ. It is
