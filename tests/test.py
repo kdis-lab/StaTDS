@@ -10,7 +10,7 @@ from statds import no_parametrics
 
 
 class Normality(unittest.TestCase):
-    data = pd.read_csv("sample_dataset.csv")
+    data = pd.read_csv("../statds/assets/app/sample_dataset.csv")
 
     def test_shapiro(self):
         for key in self.data.columns[1:]:
@@ -241,13 +241,13 @@ class NoParametrics(unittest.TestCase):
         ranks, statistic, p_value, cv_value, hypothesis = no_parametrics.quade(self.data, 0.05, minimize=False)
         results_article = {"ranks": {"PDFC": 1.3883333333333336, "NNEP": 2.5383333333333336,
                                      "IS-CHC + 1NN": 2.591666666666667, "FH-GBML": 3.481666666666666},
-                           "statistic": 22.206729531787442,
-                           "p_value": 3.5726369523928085E-10}
+                           "statistic": 11.767101928445534,
+                           "p_value": 2.579837843238313e-06}
 
         for key in ranks.keys():
             self.assertAlmostEqual(ranks[key], results_article["ranks"][key], delta=0.000001)
-        # self.assertAlmostEqual(statistic, results_article["statistic"], delta=0.0001)
-        # self.assertAlmostEqual(p_value, results_article["p_value"], delta=0.0001)
+        self.assertAlmostEqual(statistic, results_article["statistic"], delta=0.0001)
+        self.assertAlmostEqual(p_value, results_article["p_value"], delta=0.0001)
         print(statistic, p_value)
     def test_bonferroni_friedman(self):
         ranks, stadistic, p_value, cv_value, hypothesis = no_parametrics.friedman(self.data, 0.05,

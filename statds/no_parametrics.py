@@ -591,65 +591,78 @@ def quade(dataset: pd.DataFrame, alpha: float = 0.05, minimize: bool = False, ve
     df = dataset.copy()
 
     columns_names.pop(0)
+    df[columns_names] = df[columns_names].astype(float)
+
+    # Compute the range of each block
     max_results = dataset[columns_names].max(axis=1)
     min_results = dataset[columns_names].min(axis=1)
     sample_range = max_results - min_results
     df["sample_range"] = sample_range
-    sample_range = sample_range.values.flatten().tolist()
-    aligned_observations = sorted(sample_range)
-    ranking_cases = [aligned_observations.index(v) + 1 + (aligned_observations.count(v) - 1) / 2. for v in sample_range]
-
+    sample_range_list = sample_range.values.flatten().tolist()
+    aligned_observations = sorted(sample_range_list)
+    ranking_cases = [aligned_observations.index(v) + 1 + (aligned_observations.count(v) - 1) / 2. for v in
+                     sample_range_list]
     df["Rank_Q_i"] = ranking_cases
 
+    # Assign rankings to each treatment within each block
     for index in df.index:
-        row = sorted(dataset.loc[index][columns_names].values.flatten().tolist())
-        row_sort = list(reversed(row)) if not minimize else row
-        for algorith in columns_names:
-            v = df.loc[index][algorith]
-            df.at[index, algorith] = row_sort.index(v) + 1 + (row_sort.count(v) - 1) / 2.
+        row_values = dataset.loc[index][columns_names].values.flatten().tolist()
+        # Sort depending on whether we minimize or maximize
+        row_sort = sorted(row_values, reverse=not minimize)
+        for alg in columns_names:
+            v = df.loc[index][alg]
+            # Assign rank, accounting for ties
+            df.at[index, alg] = row_sort.index(v) + 1 + (row_sort.count(v) - 1) / 2.
 
+    # Compute:
+    # 1. relative_size: matrix S with S_ij = Rank_Q_i * (r_ij - (k+1)/2)
+    # 2. rankings_without_average_adjusting: weighted values to compute average ranks per treatment
     relative_size = []
     rankings_without_average_adjusting = []
 
     for index in df.index:
-        row = np.array(df.loc[index][columns_names].values)
-        r = df.loc[index]["Rank_Q_i"]
-        relative_size.append(list(r * (row - (num_algorithm + 1) / 2)))
-        rankings_without_average_adjusting.append(list(row * r))
+        # Rankings are already assigned in the DataFrame
+        row = np.array([df.at[index, alg] for alg in columns_names])
+        r = df.at[index, "Rank_Q_i"]
+        # Compute S for block i
+        S_i = [r * (value - (num_algorithm + 1) / 2.) for value in row]
+        relative_size.append(S_i)
+        # Weighted values for computing average ranks
+        rankings_without_average_adjusting.append(list(r * row))
 
-    relative_size_to_algorithm = [sum(row[j] for row in relative_size) for j in range(num_algorithm)]
-    rankings_without_average_adjusting_to_algorithm = [sum(row[j] for row in rankings_without_average_adjusting) for j
-                                                       in range(num_algorithm)]
-
+    # Compute unnormalized average ranking for each treatment
+    rankings_without_average_adjusting_to_algorithm = [
+        sum(row[j] for row in rankings_without_average_adjusting) for j in range(num_algorithm)
+    ]
     rankings_avg = [w / (num_cases * (num_cases + 1) / 2.) for w in rankings_without_average_adjusting_to_algorithm]
 
-    stadistic_a = ((num_cases * (num_cases + 1) * (2*num_cases + 1) * num_algorithm * (num_algorithm + 1) *
-                    (num_algorithm-1)) / 72)
-    stadistic_b = sum(s ** 2 for s in relative_size_to_algorithm) / float(num_cases)
-    hypothesis_state = True
-    stadistic_quade = None
-    critical_value = None
+    # Compute statistics A and B based on the S matrix
+    A = sum(sum(x ** 2 for x in row) for row in relative_size)
+    Sj = [sum(relative_size[i][j] for i in range(num_cases)) for j in range(num_algorithm)]
+    B = sum(s ** 2 for s in Sj) / float(num_cases)
 
-    if stadistic_a - stadistic_b > 0.0000000001:
-        stadistic_quade = (num_cases - 1) * stadistic_b / (stadistic_a - stadistic_b)
+    # Compute the Quade F-statistic and p-value using the F distribution
+    tolerance = 1e-10
+    if abs(A - B) < tolerance:
+        stadistic_quade = 0
+        p_value = 1.0
+        critical_value = None
+    else:
+        stadistic_quade = (num_cases - 1) * B / (A - B)
         p_value = stats.get_p_value_f(stadistic_quade, num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1))
         critical_value = stats.get_cv_f_distribution(num_algorithm - 1, (num_algorithm - 1) * (num_cases - 1), alpha)
-        if p_value < alpha:
-            hypothesis_state = False
+
+    # Interpret the result of the test
+    if p_value < alpha:
+        hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
     else:
-        p_value = math.pow((1 / float(math.factorial(num_algorithm))), num_cases - 1)
-        hypothesis_state = False if p_value < alpha else True
-
-    # Si A = B se considera un región critical en la distribución estadística, y se calcula el p-valor como (1/k!)^n-1
-
-    hypothesis = f"Reject H0 with alpha = {alpha} (Different distributions)"
-    if hypothesis_state:
         hypothesis = f"Fail to Reject H0 with alpha = {alpha} (Same distributions)"
 
     if verbose:
         print(df)
 
-    rankings_with_label = {j: i for i, j in zip(rankings_avg, columns_names)}
+    # Build a dictionary with average ranks as keys and algorithm names as values
+    rankings_with_label = {alg: rank for rank, alg in zip(rankings_avg, columns_names)}
 
     return rankings_with_label, stadistic_quade, p_value, critical_value, hypothesis
 
