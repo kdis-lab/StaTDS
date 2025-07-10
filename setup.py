@@ -38,7 +38,7 @@ setup(
     name='statds',
 
     # Version
-    version='1.1.6',
+    version='1.1.7',
 
     # Description
     description='Library for statistical testing and comparison of algorithm results',
