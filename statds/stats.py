@@ -353,8 +353,11 @@ def get_cv_willcoxon(num_problems: int, alpha: float):
     selected_num_samples = min(available_num_samples, key=lambda num: abs(num - num_problems))
 
     cv_alpha_selected = wilcoxon_table[wilcoxon_table[columns[0]] == selected_num_samples][str(selected_alpha)].iloc[0]
-
-    return int(cv_alpha_selected)
+    try:
+        cv_alpha_selected = int(cv_alpha_selected)
+    except ValueError:
+        cv_alpha_selected = None
+    return cv_alpha_selected
 
 
 def get_shapiro_weights(n_weights: int):
