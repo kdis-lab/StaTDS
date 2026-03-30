@@ -269,6 +269,9 @@ docker run -p 8050:8050 --name container name-lib
 
 Now, you can access to the interface with your Web navigator through the following url: http://localhost:8050
 
+## Acknowledgments
+This research was supported in part by the PID2023-148396NB-I00 and TED2021-132702B-C22 projects of Spanish Ministry of Science and Innovation and the European Regional Development Fund, by the ProyExcel-0069 project of the Andalusian University, Research and Innovation Department.
+
 
 ## References
 [1] 1.5 getting started - installing git. Git. (n.d.). https://git-scm.com/book/en/v2/Getting-Started-Installing-Git 
